@@ -15,7 +15,17 @@
 
 | ID | Feature | Status | Spec | Created |
 |----|---------|--------|------|---------|
+| PROJ-1 | Supabase Infrastructure Setup | Roadmap | — | 2026-06-16 |
+| PROJ-2 | User Authentication | Roadmap | — | 2026-06-16 |
+| PROJ-3 | FlexCover Webformular | Roadmap | — | 2026-06-16 |
+| PROJ-4 | Formular-Entwurf & Auto-Save | Roadmap | — | 2026-06-16 |
+| PROJ-5 | PDF-Generierung & Download | Roadmap | — | 2026-06-16 |
+| PROJ-6 | Formular-Einreichung & Bestätigung | Roadmap | — | 2026-06-16 |
+| PROJ-7 | PDF-Versand per E-Mail | Roadmap | — | 2026-06-16 |
+| PROJ-8 | KI-gestützte Formularausfüllung | Roadmap | — | 2026-06-16 |
+| PROJ-9 | Admin Dashboard | Roadmap | — | 2026-06-16 |
+| PROJ-10 | Generische Formular-Engine | Roadmap | — | 2026-06-16 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-1
+## Next Available ID: PROJ-11
