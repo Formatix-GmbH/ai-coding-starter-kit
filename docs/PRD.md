@@ -12,7 +12,7 @@ FlexCover Antragsportal ist eine DSGVO-konforme Web-App, die den bestehenden XFA
 
 | Priority | Feature | Status |
 |----------|---------|--------|
-| P0 (MVP) | Supabase Infrastructure Setup | Roadmap |
+| P0 (MVP) | Supabase Infrastructure Setup | Planned |
 | P0 (MVP) | User Authentication (Register, Login, Passwort-Reset) | Roadmap |
 | P0 (MVP) | FlexCover Webformular (9 Abschnitte, dynamische Feldlogik, Validierung) | Roadmap |
 | P0 (MVP) | Formular-Entwurf & Auto-Save | Roadmap |
