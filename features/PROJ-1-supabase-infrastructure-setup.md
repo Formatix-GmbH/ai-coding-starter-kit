@@ -153,7 +153,7 @@ Siehe Tabelle „Technical Decisions" im Decision Log oben.
 
 **Supabase-Projekte (bereits angelegt, EU/Frankfurt, eu-central-1):**
 - `flexCover-dev` → `xctlfuhwnhknzqqibmgm`
-- `flexCover-prod` → `ncrvjizufytvfofiqpjx` (Migration folgt in Deploy-Phase)
+- `flexCover-prod` → `ncrvjizufytvfofiqpjx` — **alle 3 Migrationen am 2026-06-16 angewendet, identisch zu Dev verifiziert, Advisor clean**
 
 **Migrationen (`supabase/migrations/`):**
 - `20260616120000_init_profiles_and_storage.sql` — `profiles`-Tabelle (id→auth.users ON DELETE CASCADE, full_name, created_at, updated_at), RLS default-deny + Eigenzugriffs-Policies (select/update), `updated_at`-Trigger, `handle_new_user`-Trigger (SECURITY DEFINER, legt Profil bei Registrierung an), privater Bucket `application-pdfs` + Storage-Policies (Eigenordner-Zugriff)
@@ -169,12 +169,12 @@ Siehe Tabelle „Technical Decisions" im Decision Log oben.
 - alter Platzhalter `src/lib/supabase.ts` (exportierte `null`) entfernt
 - `src/lib/env.test.ts` — 5 Unit-Tests (alle grün)
 
-**Manuell durch den Nutzer zu erledigen:**
-- `.env.local` mit Dev-Werten befüllen (Datei ist durch Berechtigungen geschützt, daher nicht automatisch geschrieben):
-  - `NEXT_PUBLIC_SUPABASE_URL=https://xctlfuhwnhknzqqibmgm.supabase.co`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_6aXDn6RNRV4FoTIqJQchoA_wAQwJRwJ`
-- Auth: E-Mail/Passwort-Provider + Double-Opt-In im Dashboard aktivieren; Custom-SMTP für Prod als Platzhalter
-- Migrationen vor Go-Live identisch auf `flexCover-prod` anwenden
+**Manuelle Setup-Schritte (am 2026-06-16 gemeinsam durchgegangen):**
+- [x] `.env.local` mit Dev-Werten befüllt (URL + Publishable-Key); von Git ignoriert, kein Service-Key enthalten — verifiziert
+- [x] `.env.local.example` auf reine Platzhalter zurückgesetzt (echte Werte entfernt, committet)
+- [x] Auth: E-Mail-Provider + Double-Opt-In + Site URL (`http://localhost:3000`) im Dashboard aktiviert (vom Nutzer bestätigt; finale Verifikation beim Signup-Flow in PROJ-2). SMTP für Dev unverändert (eingebauter Versand).
+- [x] Alle 3 Migrationen auf `flexCover-prod` angewendet und identisch zu Dev verifiziert (Advisor clean)
+- [ ] Prod: Custom-SMTP + Auth-URLs erst bei tatsächlichem Go-Live (Deploy-Phase)
 
 **Bekanntes Template-Problem (nicht PROJ-1):** `npm run lint` schlägt fehl (`next lint` in Next 16 entfernt; ESLint 9 erwartet Flat-Config statt `.eslintrc.json`). TypeScript-Check (`tsc --noEmit`) und Tests laufen sauber.
 
