@@ -1,6 +1,6 @@
 # PROJ-1: Supabase Infrastructure Setup
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-06-16
 **Last Updated:** 2026-06-16
 
@@ -69,12 +69,84 @@
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| Paket `@supabase/ssr` ergänzen | Next.js 16 App Router braucht sichere Server-/Browser-/Middleware-Sitzungen; einfacher Browser-Client reicht für Auth + RLS nicht | 2026-06-16 |
+| Drei Verbindungs-Zugänge (Browser/Server/Middleware) | Voraussetzung für sicheres Auth + RLS im App Router | 2026-06-16 |
+| Profil-Anlage per Datenbank-Trigger auf `auth.users` | Garantiert: kein Login-Konto ohne Profil, unabhängig vom Registrierungsweg; zuverlässiger als App-Code | 2026-06-16 |
+| RLS-Baseline „default deny" | Sicherheit ab Tag 1; jede künftige Tabelle erbt das Prinzip | 2026-06-16 |
+| Privater Storage-Bucket `application-pdfs` + signierte Links | PDFs können sensible Unternehmensdaten enthalten; niemals öffentlich erreichbar | 2026-06-16 |
+| `profiles` mit `ON DELETE CASCADE` zum Auth-Konto | Erfüllt Löschkonzept; keine verwaisten Profildaten | 2026-06-16 |
+| Provisionierung: Projekte manuell, Schema per Migration | Account/Region/Billing/AVV sind menschlich-rechtliche Schritte; Schema/RLS/Trigger reproduzierbar & auf Prod wiederholbar | 2026-06-16 |
+| Konfig-Validierung der Env-Variablen (zod) beim Start | Klare Fehlermeldung statt stillem Absturz bei fehlender Konfiguration | 2026-06-16 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Überblick
+PROJ-1 hat keine sichtbare UI. Es ist das technische Fundament: zwei Datenbank-Umgebungen, eine sichere Verbindung aus der App, ein erstes Nutzerprofil-Konzept, abgesicherter Datei-Speicher und ein Sicherheitsstandard, auf den alle weiteren Features aufbauen.
+
+### A) Bausteine
+
+```
+Supabase-Fundament
+├── Umgebung "Development"  (Supabase-Projekt EU/Frankfurt)
+│   └── für Entwicklung & Tests — nie echte Personendaten
+├── Umgebung "Production"   (Supabase-Projekt EU/Frankfurt)
+│   └── für echten Betrieb — getrennte Credentials
+│
+├── App-Verbindung (3 Zugänge für Next.js)
+│   ├── Browser-Zugang   → für Aktionen im Browser des Nutzers
+│   ├── Server-Zugang    → für serverseitiges Rendern & geschützte Abfragen
+│   └── Middleware-Zugang→ hält die Anmelde-Sitzung gültig
+│
+├── Datenbank
+│   └── Tabelle "profiles" (Nutzerprofil, 1:1 zum Login-Konto)
+│       └── wird automatisch angelegt, sobald sich jemand registriert
+│
+├── Sicherheit (RLS-Baseline)
+│   └── Standard: alles gesperrt, außer ausdrücklich erlaubt
+│       └── jeder sieht nur seine eigenen Daten
+│
+└── Datei-Speicher
+    └── privater Bucket "application-pdfs" (kein öffentlicher Zugriff)
+```
+
+### B) Datenmodell (Klartext)
+
+**Profil (`profiles`)** — ergänzt das Login-Konto um anzeigbare Stammdaten:
+- Verknüpfung zum Login-Konto (eindeutige ID, identisch mit dem Auth-Konto)
+- Anzeige-/Kontaktangaben (z.B. Name) — bewusst minimal, Datenminimierung
+- Zeitstempel „erstellt am" / „geändert am"
+
+Regeln:
+- Wird automatisch erzeugt, wenn ein neues Login-Konto entsteht (Datenbank-Trigger)
+- Wird automatisch mitgelöscht, wenn das Login-Konto gelöscht wird (Kaskaden-Löschung) → erfüllt das Löschkonzept
+- Jeder Nutzer kann nur sein eigenes Profil lesen/ändern (RLS)
+
+**Datei-Speicher (`application-pdfs`)**:
+- Privat — Dateien nur über zeitlich begrenzte, signierte Links erreichbar
+- Inhalt (PDFs) folgt erst in PROJ-5; hier wird nur der Bucket samt Zugriffsregeln angelegt
+
+*Die Antrags-/Formulardaten-Tabelle gehört bewusst zu PROJ-4 — siehe „Out of Scope".*
+
+### C) Technische Entscheidungen
+Siehe Tabelle „Technical Decisions" im Decision Log oben.
+
+### D) Abhängigkeiten (zu installieren)
+- **`@supabase/ssr`** — Server-/Browser-/Middleware-Auth für Next.js App Router
+
+*Bereits vorhanden:* `@supabase/supabase-js`, `zod` (Konfig-Validierung der Env-Variablen).
+
+### E) Umgebungsvariablen (Konzept)
+- `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Browser, öffentlich)
+- Server-seitiger Service-Schlüssel nur serverseitig, niemals an den Browser — separat in `.env.local.example` dokumentiert
+- Getrennte Werte je Umgebung (Dev/Prod) — niemals vermischen
+
+### F) Provisionierungs-Workflow
+1. Nutzer legt manuell zwei Supabase-Projekte (Dev + Prod, EU/Frankfurt) an inkl. Billing & AVV
+2. Auth-Provider E-Mail/Passwort + Double-Opt-In aktivieren; Custom-SMTP als Platzhalter dokumentieren
+3. Schema (`profiles`), Trigger, RLS-Policies und Storage-Bucket werden per Migration (Supabase MCP) angewendet — zuerst Dev, später identisch auf Prod
 
 ## QA Test Results
 _To be added by /qa_
