@@ -15,7 +15,7 @@
 
 | ID | Feature | Status | Spec | Created |
 |----|---------|--------|------|---------|
-| PROJ-1 | Supabase Infrastructure Setup | Architected | [PROJ-1](PROJ-1-supabase-infrastructure-setup.md) | 2026-06-16 |
+| PROJ-1 | Supabase Infrastructure Setup | In Progress | [PROJ-1](PROJ-1-supabase-infrastructure-setup.md) | 2026-06-16 |
 | PROJ-2 | User Authentication | Roadmap | — | 2026-06-16 |
 | PROJ-3 | FlexCover Webformular | Roadmap | — | 2026-06-16 |
 | PROJ-4 | Formular-Entwurf & Auto-Save | Roadmap | — | 2026-06-16 |

@@ -1,6 +1,6 @@
 # PROJ-1: Supabase Infrastructure Setup
 
-## Status: Architected
+## Status: In Progress
 **Created:** 2026-06-16
 **Last Updated:** 2026-06-16
 
@@ -147,6 +147,35 @@ Siehe Tabelle „Technical Decisions" im Decision Log oben.
 1. Nutzer legt manuell zwei Supabase-Projekte (Dev + Prod, EU/Frankfurt) an inkl. Billing & AVV
 2. Auth-Provider E-Mail/Passwort + Double-Opt-In aktivieren; Custom-SMTP als Platzhalter dokumentieren
 3. Schema (`profiles`), Trigger, RLS-Policies und Storage-Bucket werden per Migration (Supabase MCP) angewendet — zuerst Dev, später identisch auf Prod
+
+## Implementation Notes (Backend)
+**Stand:** 2026-06-16 — auf Branch `develop`
+
+**Supabase-Projekte (bereits angelegt, EU/Frankfurt, eu-central-1):**
+- `flexCover-dev` → `xctlfuhwnhknzqqibmgm`
+- `flexCover-prod` → `ncrvjizufytvfofiqpjx` (Migration folgt in Deploy-Phase)
+
+**Migrationen (`supabase/migrations/`):**
+- `20260616120000_init_profiles_and_storage.sql` — `profiles`-Tabelle (id→auth.users ON DELETE CASCADE, full_name, created_at, updated_at), RLS default-deny + Eigenzugriffs-Policies (select/update), `updated_at`-Trigger, `handle_new_user`-Trigger (SECURITY DEFINER, legt Profil bei Registrierung an), privater Bucket `application-pdfs` + Storage-Policies (Eigenordner-Zugriff)
+- `20260616120100_harden_functions.sql` — `set_updated_at` fester `search_path`; EXECUTE auf `handle_new_user` von public/anon/authenticated entzogen
+- **Beide auf dev angewendet.** Security-Advisor: keine Findings mehr (`lints: []`).
+
+**App-Code:**
+- `src/lib/env.ts` — Zod-Validierung der NEXT_PUBLIC_-Variablen, klare Fehlermeldung statt stillem Absturz; `parsePublicEnv()` testbar ausgelagert
+- `src/lib/supabase/client.ts` — Browser-Client
+- `src/lib/supabase/server.ts` — Server-Client (Cookies)
+- `src/lib/supabase/middleware.ts` + `src/middleware.ts` — Session-Refresh
+- alter Platzhalter `src/lib/supabase.ts` (exportierte `null`) entfernt
+- `src/lib/env.test.ts` — 5 Unit-Tests (alle grün)
+
+**Manuell durch den Nutzer zu erledigen:**
+- `.env.local` mit Dev-Werten befüllen (Datei ist durch Berechtigungen geschützt, daher nicht automatisch geschrieben):
+  - `NEXT_PUBLIC_SUPABASE_URL=https://xctlfuhwnhknzqqibmgm.supabase.co`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_6aXDn6RNRV4FoTIqJQchoA_wAQwJRwJ`
+- Auth: E-Mail/Passwort-Provider + Double-Opt-In im Dashboard aktivieren; Custom-SMTP für Prod als Platzhalter
+- Migrationen vor Go-Live identisch auf `flexCover-prod` anwenden
+
+**Bekanntes Template-Problem (nicht PROJ-1):** `npm run lint` schlägt fehl (`next lint` in Next 16 entfernt; ESLint 9 erwartet Flat-Config statt `.eslintrc.json`). TypeScript-Check (`tsc --noEmit`) und Tests laufen sauber.
 
 ## QA Test Results
 _To be added by /qa_
