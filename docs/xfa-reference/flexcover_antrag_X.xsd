@@ -1,0 +1,371 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--Created with Liquid Studio 2018 (https://www.liquid-technologies.com)-->
+<xs:schema xmlns="urn:formatix:flexcover:antrag" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="urn:formatix:flexcover:antrag" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <!-- Simple types -->
+    <xs:simpleType name="AnredeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Frau" />
+            <xs:enumeration value="Herr" />
+            <xs:enumeration value="Divers" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="UnternehmenstypType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Hersteller" />
+            <xs:enumeration value="Händler" />
+            <xs:enumeration value="Hersteller und Händler" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="JaNeinType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Ja" />
+            <xs:enumeration value="Nein" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="OrtType">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1" />
+            <xs:maxLength value="200" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="PLZType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{4,10}" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="GYearMaybe">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\d{4}" />
+        </xs:restriction>
+    </xs:simpleType>
+    <!-- Reusable complex types -->
+    <xs:complexType name="AdresseType">
+        <xs:sequence>
+            <xs:element name="strasse" type="xs:string" />
+            <xs:element name="plz" type="PLZType" />
+            <xs:element name="ort" type="OrtType" />
+            <xs:element name="land" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="BeguenstigterType">
+        <xs:sequence>
+            <xs:element name="vollstaendigeFirmierung" type="xs:string" />
+            <xs:element name="sitzBeguenstigter" type="xs:string" />
+            <xs:element name="personenNummerBeguenstigter" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="JahrMAType">
+        <xs:sequence>
+            <xs:element name="jahr" type="GYearMaybe" />
+            <xs:element name="ma" type="xs:integer" />
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="JahrWertType">
+        <xs:sequence>
+            <xs:element name="jahr" type="GYearMaybe" />
+            <xs:element name="wert" type="xs:decimal" />
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="JahrProzentType">
+        <xs:sequence>
+            <xs:element name="jahr" type="GYearMaybe" />
+            <xs:element name="prozent" type="xs:decimal" />
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="EinkaufLand3JType">
+        <xs:sequence>
+            <xs:element name="land" type="xs:string" />
+            <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+            <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+            <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="BeschKategorie3JType">
+        <xs:sequence>
+            <xs:element name="jahr1" type="xs:integer" minOccurs="0" />
+            <xs:element name="jahr2" type="xs:integer" minOccurs="0" />
+            <xs:element name="jahr3" type="xs:integer" minOccurs="0" />
+        </xs:sequence>
+    </xs:complexType>
+    <!-- Root -->
+    <xs:element name="AntragsformularFlexcover" type="AntragsformularFlexcoverType" />
+    <xs:complexType name="AntragsformularFlexcoverType">
+        <xs:sequence>
+            <!-- Abschnitt 1: Ansprechpartner -->
+            <xs:element name="Ansprechpartner">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="anrede" type="AnredeType" />
+                        <xs:element name="titel" type="xs:string" minOccurs="0" />
+                        <xs:element name="vorname" type="xs:string" />
+                        <xs:element name="nachname" type="xs:string" />
+                        <xs:element name="email" type="xs:string" />
+                        <xs:element name="telefon" type="xs:string" minOccurs="0" />
+                        <xs:element name="taetigkeitsbereich" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- Abschnitt 2: Unternehmensangaben -->
+            <xs:element name="Unternehmen">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="unternehmensgegenstand" type="xs:string" />
+                        <xs:element name="firma" type="xs:string" />
+                        <xs:element name="personenNr" type="xs:string" minOccurs="0" />
+                        <xs:element name="unternehmenstyp" type="UnternehmenstypType" minOccurs="0" />
+                        <xs:element name="adresse" type="AdresseType" />
+                        <xs:element name="branche" type="xs:string" />
+                        <xs:element name="mitarbeiter" type="xs:integer" />
+                        <xs:element name="website" type="xs:string" minOccurs="0" />
+                        <xs:element name="weitereBeguenstigte" type="JaNeinType" minOccurs="0" />
+                        <xs:element name="Beguenstigter" type="BeguenstigterType" minOccurs="0" maxOccurs="unbounded" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- Abschnitt 3: Firmensitz und Bedeutung -->
+            <xs:element name="SitzUndBedeutung">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="hauptsitz" type="xs:string" />
+                        <xs:element name="anzahlStandorteDE" type="xs:integer" />
+                        <xs:element name="anzahlStandorteAusland" type="xs:integer" />
+                        <xs:element name="eignerstruktur" type="xs:string" />
+                        <xs:element name="geaenderteEigentuemersruktur" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="beschreibungGeplanteAenderungen" type="xs:string" minOccurs="0" />
+                        <xs:element name="strukturschwach" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="beschreibungStrukturschwach" type="xs:string" minOccurs="0" />
+                        <xs:element name="regionaleBedeutung" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="beschreibungRegionaleBedeutung" type="xs:string" minOccurs="0" />
+                        <xs:element name="steuerpflichtDE" type="xs:boolean" minOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- Abschnitt 4: F&E -->
+            <xs:element name="ForschungEntwicklung">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Beschaeftigte" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maDE1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maDE2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maDE3" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maAUS1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maAUS2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maAUS3" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="Aufwendungen" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maDE1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maDE2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maDE3" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maAUS1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maAUS2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maAUS3" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="veraenderungen" type="xs:string" minOccurs="0" />
+                        <xs:element name="schwerpunkte" minOccurs="0">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="Deutschland" />
+                                    <xs:enumeration value="Ausland" />
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                        <xs:element name="kooperationDE" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="kooperationBeschreibung" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- Abschnitt 5: Investitionen -->
+            <xs:element name="Investitionen">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Invest" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maDE1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maDE2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maDE3" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maAUS1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="maAUS2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="maAUS3" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="investBeispieleDE" type="xs:string" minOccurs="0" />
+                        <xs:element name="investBeispieleAusland" type="xs:string" minOccurs="0" />
+                        <xs:element name="investAusblick" type="xs:string" minOccurs="0" />
+                        <xs:element name="verlagerung" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="beschreibungVerlagerung" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- Abschnitt 6: Beschäftigte -->
+            <xs:element name="Beschaeftigte">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Tabelle_DE" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z1SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z1SP2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="Z1SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP3" type="xs:decimal" minOccurs="0" />
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="Tabelle_AUS" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z1SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z1SP2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="Z1SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP3" type="xs:decimal" minOccurs="0" />
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="hochqualifiziertOrt" minOccurs="0">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="Deutschland" />
+                                    <xs:enumeration value="Ausland" />
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                        <xs:element name="hochqualifiziertBeschreibung" type="xs:string" minOccurs="0" />
+                        <xs:element name="veraenderungenBeschaeftigte" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="veraenderungenBeschaeftigteText" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- Abschnitt 7: Ausbildungsaktivitäten -->
+            <xs:element name="Ausbildung">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Azubis" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z1SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z1SP2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="Z1SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP3" type="xs:decimal" minOccurs="0" />
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="ausblickAusbildung" type="xs:string" minOccurs="0" />
+                        <xs:element name="ueberBedarfAusbildung" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="kooperationBildung" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="kooperationBildungText" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- Abschnitt 8: Sourcing und Wertschöpfung -->
+            <xs:element name="SourcingWertschoepfung">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Einkauf" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Laender" minOccurs="0" maxOccurs="unbounded">
+                                        <xs:complexType>
+                                            <xs:sequence>
+                                                <xs:element name="Land" type="xs:string" minOccurs="0" />
+                                                <xs:element name="Betrag1" type="xs:decimal" minOccurs="0" />
+                                                <xs:element name="Betrag2" type="xs:decimal" minOccurs="0" />
+                                                <xs:element name="Betrag3" type="xs:decimal" minOccurs="0" />
+                                            </xs:sequence>
+                                        </xs:complexType>
+                                    </xs:element>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="Wertschoepfung" minOccurs="0">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="jahr1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="jahr3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z1SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z1SP2" type="xs:decimal" minOccurs="0" maxOccurs="unbounded" />
+                                    <xs:element name="Z1SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z2SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z3SP3" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP1" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP2" type="xs:decimal" minOccurs="0" />
+                                    <xs:element name="Z4SP3" type="xs:decimal" minOccurs="0" />
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="wertschoepfungBerechnung" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <!-- Abschnitt 9: Sonstiges -->
+            <xs:element name="Sonstiges">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="sonstigeHinweise" type="xs:string" minOccurs="0" />
+                        <xs:element name="newsletter" type="xs:boolean" minOccurs="0" />
+                        <xs:element name="Ort_Datum" type="xs:string" minOccurs="0" />
+                        <xs:element name="Unterschrift" type="xs:string" minOccurs="0" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>
