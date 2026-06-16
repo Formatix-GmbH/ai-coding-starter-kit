@@ -178,7 +178,78 @@ Siehe Tabelle „Technical Decisions" im Decision Log oben.
 **Bekanntes Template-Problem (nicht PROJ-1):** `npm run lint` schlägt fehl (`next lint` in Next 16 entfernt; ESLint 9 erwartet Flat-Config statt `.eslintrc.json`). TypeScript-Check (`tsc --noEmit`) und Tests laufen sauber.
 
 ## QA Test Results
-_To be added by /qa_
+
+**Tested:** 2026-06-16
+**Umgebung:** flexCover-dev (`xctlfuhwnhknzqqibmgm`), DB-Ebene + Unit-Tests
+**Tester:** QA Engineer (AI)
+**Hinweis:** PROJ-1 hat keine UI — getestet wurde auf Datenbank-/Konfigurationsebene (SQL gegen dev) sowie per Vitest. Browser-/E2E-Tests sind erst ab PROJ-2 (erste UI) sinnvoll und werden dort ergänzt.
+
+### Acceptance Criteria Status
+
+#### AC-1: Zwei Projekte (Dev+Prod) EU/Frankfurt, App verbindet je nach Umgebung
+- [x] Beide Projekte existieren, Region `eu-central-1`, Status ACTIVE_HEALTHY
+- [x] Verbindung ist env-gesteuert (`publicEnv` aus `NEXT_PUBLIC_*`); Client-Code korrekt
+- [ ] Abhängig von manueller Befüllung der `.env.local` durch Nutzer (siehe Implementation Notes)
+
+#### AC-2: Fehlende Env-Variablen → klarer Konfigurationsfehler
+- [x] `parsePublicEnv` wirft gesammelte, klare Fehlermeldung (kein stiller Absturz)
+- [x] Durch 5 Unit-Tests abgedeckt (`src/lib/env.test.ts`), alle grün
+
+#### AC-3: `.env.example` dokumentiert alle Variablen
+- [ ] **Nicht verifizierbar** — Datei ist durch Berechtigungs-Hardening für Lese-/Schreibzugriff gesperrt. Nutzer muss bestätigen, dass `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` enthalten sind.
+
+#### AC-4: Neuer Nutzer → automatisch `profiles`-Eintrag
+- [x] Trigger `on_auth_user_created` legt Profil an; `full_name` aus `raw_user_meta_data` übernommen
+- [x] Ohne Metadaten → Profil mit NULL-Name (kein Fehler)
+
+#### AC-5: `profiles`-RLS — Nutzer liest/ändert nur eigenes Profil
+- [x] RLS aktiv; Policies korrekt definiert (`auth.uid() = id` für SELECT/UPDATE)
+- [ ] **BUG-1:** Verhaltenstest schlägt fehl — Rolle `authenticated` hat keine Tabellen-GRANTs, Zugriff scheitert mit „permission denied" **vor** RLS-Auswertung. Eigenzugriff aktuell komplett blockiert.
+
+#### AC-6: E-Mail-Bestätigung aktiv → Login erst nach Bestätigung
+- [ ] **Nicht im Rahmen PROJ-1 testbar** — Auth-Provider-Konfiguration im Dashboard + Login-Flows gehören zu PROJ-2. Vom Nutzer manuell zu aktivieren.
+
+#### AC-7: Privater Storage-Bucket, kein öffentlicher Zugriff
+- [x] Bucket `application-pdfs` ist privat (`public = false`)
+- [x] Storage-Policies für select/insert/update/delete beschränken auf Eigenordner (`auth.uid()`-Präfix)
+
+#### AC-8: Nutzerkonto gelöscht → abhängige Datensätze kaskadieren
+- [x] FK mit `ON DELETE CASCADE` (`confdeltype = 'c'`)
+- [x] Verhaltenstest: Löschen der Auth-Nutzer entfernte zugehörige Profile (0 verblieben)
+
+### Edge Cases Status
+- [x] EC: Registrierung ohne `full_name` → Profil mit NULL-Name, kein Fehler
+- [x] EC: Doppelte Profil-Anlage → `on conflict (id) do nothing` greift (idempotent)
+- [ ] EC: Verwaister Auth-User ohne Profil → nicht reproduzierbar (Trigger zuverlässig); ok
+
+### Security Audit Results
+- [x] Supabase Security-Advisor: **keine Findings** (`lints: []`)
+- [x] `handle_new_user` SECURITY DEFINER, EXECUTE für anon/authenticated entzogen, fester `search_path`
+- [x] `set_updated_at` mit fixem `search_path`
+- [x] RLS auf `profiles` aktiv (default deny), keine INSERT/DELETE-Policy für Nutzer
+- [x] Storage-Bucket privat, kein öffentlicher Lesezugriff
+- [x] Fehlende GRANTs sind **fail-closed** (kein Datenleck) — funktional aber zu restriktiv (siehe BUG-1)
+- [x] Keine Secrets im Repo (`.mcp.json` gitignored; Service-Key nicht clientseitig)
+
+### Bugs Found
+
+#### BUG-1: Rolle `authenticated` hat keine Tabellen-Rechte auf `public.profiles`
+- **Severity:** High
+- **Steps to Reproduce:**
+  1. Als Rolle `authenticated` (wie supabase-js/PostgREST mit User-JWT) `select * from public.profiles` ausführen
+  2. Erwartet: eigene Profilzeile (durch RLS gefiltert)
+  3. Tatsächlich: `ERROR 42501: permission denied for table profiles` — RLS wird nie erreicht
+- **Ursache:** Per SQL-Migration erstellte Tabellen erhalten keine automatischen GRANTs an `anon`/`authenticated` (anders als per Dashboard erstellte). `has_table_privilege('authenticated', 'public.profiles', …)` = false für SELECT/UPDATE/INSERT.
+- **Auswirkung:** Jeder Profilzugriff der App scheitert; blockiert PROJ-2 und alle profilabhängigen Features.
+- **Empfohlener Fix (für /backend):** In einer Migration `grant select, update on public.profiles to authenticated;` (passend zu den vorhandenen RLS-Policies; INSERT bleibt dem Trigger vorbehalten). RLS schränkt danach wie vorgesehen auf die eigene Zeile ein.
+- **Priority:** Fix before deployment
+
+### Summary
+- **Acceptance Criteria:** 4/8 vollständig bestanden (AC-2, AC-4, AC-7, AC-8); AC-1 & AC-3 abhängig von manueller Nutzer-Aktion; AC-6 zu PROJ-2 verschoben; **AC-5 fehlgeschlagen (BUG-1)**
+- **Bugs Found:** 1 total (0 critical, 1 high, 0 medium, 0 low)
+- **Security:** Pass (Advisor clean; fehlende GRANTs sind fail-closed, kein Sicherheitsrisiko)
+- **Production Ready:** **NO**
+- **Recommendation:** BUG-1 zuerst beheben (`/backend`), danach RLS-Isolationstest (AC-5) erneut verifizieren. UI-/E2E-Abdeckung ab PROJ-2.
 
 ## Deployment
 _To be added by /deploy_
