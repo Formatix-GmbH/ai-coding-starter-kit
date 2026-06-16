@@ -1,6 +1,6 @@
 # PROJ-1: Supabase Infrastructure Setup
 
-## Status: In Progress
+## Status: Approved
 **Created:** 2026-06-16
 **Last Updated:** 2026-06-16
 
@@ -158,7 +158,8 @@ Siehe Tabelle „Technical Decisions" im Decision Log oben.
 **Migrationen (`supabase/migrations/`):**
 - `20260616120000_init_profiles_and_storage.sql` — `profiles`-Tabelle (id→auth.users ON DELETE CASCADE, full_name, created_at, updated_at), RLS default-deny + Eigenzugriffs-Policies (select/update), `updated_at`-Trigger, `handle_new_user`-Trigger (SECURITY DEFINER, legt Profil bei Registrierung an), privater Bucket `application-pdfs` + Storage-Policies (Eigenordner-Zugriff)
 - `20260616120100_harden_functions.sql` — `set_updated_at` fester `search_path`; EXECUTE auf `handle_new_user` von public/anon/authenticated entzogen
-- **Beide auf dev angewendet.** Security-Advisor: keine Findings mehr (`lints: []`).
+- `20260616120200_grant_profiles_access.sql` — **BUG-1-Fix:** `grant select, update on public.profiles to authenticated` (per SQL-Migration erstellte Tabellen erhalten keine Auto-GRANTs)
+- **Alle auf dev angewendet.** Security-Advisor: keine Findings mehr (`lints: []`).
 
 **App-Code:**
 - `src/lib/env.ts` — Zod-Validierung der NEXT_PUBLIC_-Variablen, klare Fehlermeldung statt stillem Absturz; `parsePublicEnv()` testbar ausgelagert
@@ -204,7 +205,8 @@ Siehe Tabelle „Technical Decisions" im Decision Log oben.
 
 #### AC-5: `profiles`-RLS — Nutzer liest/ändert nur eigenes Profil
 - [x] RLS aktiv; Policies korrekt definiert (`auth.uid() = id` für SELECT/UPDATE)
-- [ ] **BUG-1:** Verhaltenstest schlägt fehl — Rolle `authenticated` hat keine Tabellen-GRANTs, Zugriff scheitert mit „permission denied" **vor** RLS-Auswertung. Eigenzugriff aktuell komplett blockiert.
+- [x] **Re-Test nach BUG-1-Fix bestanden:** Als Nutzer 1 (Rolle `authenticated`) genau 1 sichtbares Profil (eigenes); fremdes Profil unsichtbar
+- [x] Eigenes Profil änderbar; Änderung am fremden Profil trifft 0 Zeilen (RLS blockt)
 
 #### AC-6: E-Mail-Bestätigung aktiv → Login erst nach Bestätigung
 - [ ] **Nicht im Rahmen PROJ-1 testbar** — Auth-Provider-Konfiguration im Dashboard + Login-Flows gehören zu PROJ-2. Vom Nutzer manuell zu aktivieren.
@@ -233,7 +235,8 @@ Siehe Tabelle „Technical Decisions" im Decision Log oben.
 
 ### Bugs Found
 
-#### BUG-1: Rolle `authenticated` hat keine Tabellen-Rechte auf `public.profiles`
+#### BUG-1: Rolle `authenticated` hat keine Tabellen-Rechte auf `public.profiles`  ✅ BEHOBEN (2026-06-16)
+- **Status:** Behoben durch Migration `20260616120200_grant_profiles_access.sql`; AC-5-Isolationstest erneut bestanden; Advisor weiterhin clean.
 - **Severity:** High
 - **Steps to Reproduce:**
   1. Als Rolle `authenticated` (wie supabase-js/PostgREST mit User-JWT) `select * from public.profiles` ausführen
@@ -244,12 +247,17 @@ Siehe Tabelle „Technical Decisions" im Decision Log oben.
 - **Empfohlener Fix (für /backend):** In einer Migration `grant select, update on public.profiles to authenticated;` (passend zu den vorhandenen RLS-Policies; INSERT bleibt dem Trigger vorbehalten). RLS schränkt danach wie vorgesehen auf die eigene Zeile ein.
 - **Priority:** Fix before deployment
 
-### Summary
-- **Acceptance Criteria:** 4/8 vollständig bestanden (AC-2, AC-4, AC-7, AC-8); AC-1 & AC-3 abhängig von manueller Nutzer-Aktion; AC-6 zu PROJ-2 verschoben; **AC-5 fehlgeschlagen (BUG-1)**
-- **Bugs Found:** 1 total (0 critical, 1 high, 0 medium, 0 low)
-- **Security:** Pass (Advisor clean; fehlende GRANTs sind fail-closed, kein Sicherheitsrisiko)
-- **Production Ready:** **NO**
-- **Recommendation:** BUG-1 zuerst beheben (`/backend`), danach RLS-Isolationstest (AC-5) erneut verifizieren. UI-/E2E-Abdeckung ab PROJ-2.
+### Summary (aktualisiert nach BUG-1-Fix, 2026-06-16)
+- **Acceptance Criteria:** 5/8 vollständig bestanden (AC-2, AC-4, AC-5, AC-7, AC-8); AC-1 & AC-3 abhängig von manueller Nutzer-Aktion (`.env.local` befüllen, `.env.example` bestätigen); AC-6 zu PROJ-2 verschoben (Auth-Dashboard + Login-Flows)
+- **Bugs Found:** 1 total (0 critical, 1 high → **behoben**, 0 medium, 0 low)
+- **Security:** Pass (Advisor clean, Funktionen gehärtet, Bucket privat, RLS-Isolation verifiziert)
+- **Production Ready:** **YES** (keine offenen Critical/High-Bugs)
+- **Offene manuelle Voraussetzungen vor App-Start (keine Bugs):**
+  1. `.env.local` mit Dev-Werten befüllen (URL + Anon/Publishable-Key)
+  2. `.env.example` enthält beide NEXT_PUBLIC_-Variablen (vom Nutzer bestätigen)
+  3. E-Mail-Provider + Double-Opt-In im Dashboard aktivieren (für PROJ-2)
+  4. Migrationen vor Go-Live identisch auf `flexCover-prod` anwenden
+- **Recommendation:** Approved. UI-/E2E-Abdeckung ab PROJ-2.
 
 ## Deployment
 _To be added by /deploy_
