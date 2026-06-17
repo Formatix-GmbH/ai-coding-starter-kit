@@ -37,11 +37,12 @@ export function ResetPasswordForm() {
       const fd = new FormData();
       fd.set("password", values.password);
       const result = await resetPasswordAction(fd);
-      if (result.ok) {
-        toast.success("Passwort aktualisiert. Du kannst dich jetzt anmelden.");
-      } else {
-        toast.error(result.message ?? "Zurücksetzen fehlgeschlagen.");
+      if (result.ok && result.redirectTo) {
+        toast.success("Passwort aktualisiert.");
+        window.location.href = result.redirectTo;
+        return;
       }
+      toast.error(result.message ?? "Zurücksetzen fehlgeschlagen.");
     } finally {
       setIsSubmitting(false);
     }

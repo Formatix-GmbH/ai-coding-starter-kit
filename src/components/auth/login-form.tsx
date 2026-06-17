@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-export function LoginForm() {
+export function LoginForm({ returnTo }: { returnTo?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -32,12 +32,15 @@ export function LoginForm() {
       const fd = new FormData();
       fd.set("email", values.email);
       fd.set("password", values.password);
+      if (returnTo) fd.set("returnTo", returnTo);
       const result = await loginAction(fd);
-      if (!result.ok) {
-        toast.error(result.message ?? "Anmeldung fehlgeschlagen.");
-        form.resetField("password");
+      if (result.ok && result.redirectTo) {
+        // Voll-Navigation, damit die neue Sitzung serverseitig greift.
+        window.location.href = result.redirectTo;
+        return;
       }
-      // Erfolgs-Redirect übernimmt /backend (window.location.href).
+      toast.error(result.message ?? "Anmeldung fehlgeschlagen.");
+      form.resetField("password");
     } finally {
       setIsSubmitting(false);
     }

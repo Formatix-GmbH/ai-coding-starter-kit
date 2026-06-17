@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { logoutAction } from "@/lib/actions/auth";
+import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,14 +12,28 @@ import {
 
 export const metadata: Metadata = { title: "Übersicht" };
 
-export default function DashboardPage() {
-  // Hinweis: Routenschutz + Begrüßungsname aus dem Profil werden in /backend
-  // ergänzt (Middleware + Server-Client). Hier zunächst die UI-Struktur.
+export default async function DashboardPage() {
+  // Routenschutz erfolgt in der Middleware (proxy.ts); hier den Namen laden.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let fullName: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    fullName = profile?.full_name ?? null;
+  }
+  const greeting = fullName ? `Willkommen zurück, ${fullName}` : "Willkommen zurück";
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Willkommen zurück</h1>
+          <h1 className="text-2xl font-semibold">{greeting}</h1>
           <p className="text-sm text-muted-foreground">Deine Anträge im Überblick</p>
         </div>
         <form action={logoutAction}>

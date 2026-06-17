@@ -195,6 +195,34 @@ Keine neuen Pakete. Vorhanden: `@supabase/ssr`, `react-hook-form`, `zod`, `@hook
 - `middleware.ts` → `proxy.ts` umbenennen (Next-16-Deprecation) und dabei Routenschutz + returnTo ergänzen
 - ESLint-Config erlaubt jetzt `_`-präfixierte ungenutzte Args (für Platzhalter-Signaturen)
 
+## Implementation Notes (Backend)
+**Stand:** 2026-06-17 — Branch `develop`
+
+**Migration (`supabase/migrations/`):**
+- `20260617120000_profiles_consent.sql` — `profiles` um `consent_accepted_at` + `privacy_version` erweitert; `handle_new_user`-Trigger übernimmt beide aus den Registrierungs-Metadaten (Zeitstempel = now() bei vorhandener Version). **Auf dev angewendet & verifiziert** (Trigger-Test ok). Security-Advisor: Funktions-Findings weiterhin clean. Prod-Migration folgt in der Deploy-Phase.
+
+**Server Actions (`src/lib/actions/auth.ts`) — jetzt funktional:**
+- `registerAction` — `signUp` mit `full_name` + `privacy_version` in Metadaten, `emailRedirectTo=/auth/callback`; neutrale Meldung (kein Enumeration)
+- `loginAction` — `signInWithPassword`; unterscheidet „E-Mail nicht bestätigt" vs. neutrale Fehlermeldung; liefert `redirectTo` (returnTo-validiert)
+- `logoutAction` — `signOut` + `redirect('/')`
+- `forgotPasswordAction` — `resetPasswordForEmail` → `/auth/callback?next=/passwort-zuruecksetzen`; immer neutrale Antwort
+- `resetPasswordAction` — `updateUser({ password })`; bei Erfolg `redirectTo=/dashboard`
+
+**Weitere Bausteine:**
+- `src/app/auth/callback/route.ts` — `exchangeCodeForSession` (Bestätigung & Reset), Ziel via `next` (open-redirect-sicher)
+- `src/lib/auth/safe-redirect.ts` (+ 5 Unit-Tests) — `safeRedirectPath`, blockt externe/protokoll-relative Ziele
+- `src/lib/supabase/middleware.ts` — Routenschutz: nicht eingeloggt + `/dashboard` → `/login?returnTo=…`; eingeloggt + Gast-Seite → `/dashboard`; `/passwort-zuruecksetzen` bewusst ausgenommen (Recovery-Session)
+- **`src/middleware.ts` → `src/proxy.ts`** umbenannt (Next-16-Konvention; Deprecation-Warnung beim Build behoben)
+- Frontend verdrahtet: Login/Reset navigieren bei Erfolg via `window.location.href`; Login-Seite reicht `returnTo` durch; Dashboard zeigt Profilnamen
+
+**Qualität:** `tsc` sauber · Lint 0 Errors · Build grün (keine Middleware-Deprecation mehr) · `npm test` 15/15.
+
+**Manuell durch den Nutzer (Dashboard, analog PROJ-1):**
+- **Redirect-URL** `http://localhost:3000/auth/callback` (und später Prod-Domain) in Supabase Auth → URL Configuration hinterlegen — sonst funktionieren Bestätigungs-/Reset-Links nicht
+- Optional empfohlen: **Leaked Password Protection** aktivieren (Advisor-Hinweis) + Passwort-Policy im Dashboard spiegeln
+
+**Für QA zu prüfen:** realer Signup→Bestätigungslink→Login-Flow (PKCE/`code`-Parameter im Callback), Reset-Flow, Routenschutz inkl. returnTo.
+
 ## QA Test Results
 _To be added by /qa_
 

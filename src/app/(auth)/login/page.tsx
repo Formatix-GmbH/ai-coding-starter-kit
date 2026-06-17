@@ -10,7 +10,12 @@ import {
 
 export const metadata: Metadata = { title: "Anmelden" };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ returnTo?: string }>;
+}) {
+  const { returnTo } = await searchParams;
   return (
     <Card>
       <CardHeader>
@@ -20,7 +25,7 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <LoginForm />
+        <LoginForm returnTo={returnTo} />
       </CardContent>
     </Card>
   );
