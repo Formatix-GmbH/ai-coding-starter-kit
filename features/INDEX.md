@@ -16,7 +16,7 @@
 | ID | Feature | Status | Spec | Created |
 |----|---------|--------|------|---------|
 | PROJ-1 | Supabase Infrastructure Setup | Approved | [PROJ-1](PROJ-1-supabase-infrastructure-setup.md) | 2026-06-16 |
-| PROJ-2 | User Authentication | Planned | [PROJ-2](PROJ-2-user-authentication.md) | 2026-06-16 |
+| PROJ-2 | User Authentication | Architected | [PROJ-2](PROJ-2-user-authentication.md) | 2026-06-16 |
 | PROJ-3 | FlexCover Webformular | Roadmap | — | 2026-06-16 |
 | PROJ-4 | Formular-Entwurf & Auto-Save | Roadmap | — | 2026-06-16 |
 | PROJ-5 | PDF-Generierung & Download | Roadmap | — | 2026-06-16 |

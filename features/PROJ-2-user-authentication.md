@@ -1,6 +1,6 @@
 # PROJ-2: User Authentication
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-06-17
 **Last Updated:** 2026-06-17
 
@@ -75,6 +75,7 @@
 - [ ] Wird der Einwilligungs-Zeitstempel (DSGVO) explizit gespeichert (z.B. in `profiles`)? → `/architecture`
 - [ ] Aufräumen ungenutzter/abgebrochener anonymer Sitzungen — nur relevant, falls Architektur Supabase-Anonymous wählt
 - [ ] Genauer Inhalt/Quelle der Datenschutzerklärung (juristisch) — außerhalb dieses Features
+- [ ] Quelle der `privacy_version` (Konstante im Code, z.B. Datum) — Detail für `/backend`
 
 ## Decision Log
 
@@ -93,12 +94,77 @@
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| Anonyme Sitzung rein clientseitig (kein Supabase-User) | Vermeidet verwaiste Konten & `is_anonymous`-RLS; passt exakt zum Spec-Modell (anonym speichert nichts) | 2026-06-17 |
+| DSGVO-Einwilligung in `profiles` (`consent_accepted_at` + `privacy_version`) | Nachweisbarer Beleg (Zeitpunkt + Version); minimal-invasiv über Erweiterung des `handle_new_user`-Triggers | 2026-06-17 |
+| Server Actions statt API-Routen für Auth-Flows | In Next 16 idiomatisch: weniger Boilerplate, sichere Cookie-/Session-Behandlung, direkte RSC-Integration | 2026-06-17 |
+| Gemeinsame Zod-Schemas (Client + Server) | Eine Validierungsquelle; Client für UX, Server als verbindliche Prüfung | 2026-06-17 |
+| Passwort-Stärkeanzeige ohne Zusatzpaket | Leichte eigene Logik gegen die Policy statt schwerer Lib (z.B. zxcvbn) | 2026-06-17 |
+| `/auth/callback`-Route-Handler (PKCE-Code-Tausch) | Supabase-Links (Bestätigung & Reset) liefern Code, der serverseitig gegen Sitzung getauscht wird | 2026-06-17 |
+| Routenschutz in Middleware (serverseitig) | Sicher gegen clientseitiges Umgehen; setzt PROJ-1-Middleware fort | 2026-06-17 |
+| Deutsche Routen-Slugs (`/registrieren`, `/passwort-vergessen` …) | Konsistent mit Zielgruppe | 2026-06-17 |
+| Keine neuen Pakete | Alles Nötige vorhanden (`@supabase/ssr`, `react-hook-form`, `zod`, `@hookform/resolvers`, `sonner`, shadcn) | 2026-06-17 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Überblick
+PROJ-2 baut den optionalen Konto-Bereich: Registrierung, Login/Logout, Passwort-Reset, E-Mail-Bestätigung und Routenschutz. Der anonyme Pfad braucht nichts davon — er bleibt komplett offen (Formular + Download ohne Konto, PROJ-3/5).
+
+### A) Seiten- & Komponentenstruktur
+
+```
+Öffentlich (Redirect zur Startseite, wenn bereits eingeloggt)
+├── /registrieren
+│   └── RegisterForm: Name · E-Mail · Passwort · Passwort-Bestätigung
+│        · Passwort-Stärkeanzeige · DSGVO-Pflicht-Checkbox (Link → /datenschutz)
+├── /login
+│   └── LoginForm: E-Mail · Passwort · „Passwort vergessen?"
+├── /passwort-vergessen
+│   └── ForgotPasswordForm: E-Mail → neutrale Bestätigung (kein Enumeration)
+└── /passwort-zuruecksetzen   (geöffnet über Reset-Link)
+    └── ResetPasswordForm: neues Passwort + Bestätigung + Stärkeanzeige
+
+Öffentlich (statisch)
+├── /datenschutz              (Platzhaltertext, später juristisch befüllt)
+└── /auth/callback            (unsichtbarer Route-Handler: tauscht den Code aus
+                               Bestätigungs-/Reset-Mail gegen eine Sitzung)
+
+Geschützt (Login nötig)
+└── /dashboard
+    ├── Begrüßung „Willkommen, [Name]"
+    ├── Bereich „Meine Anträge" (Platzhalter → PROJ-4)
+    ├── Button „Neuen Antrag starten" (→ PROJ-3)
+    └── Abmelden
+
+Querschnitt
+├── Middleware: Sitzung aktualisieren + Routenschutz (Redirect + „returnTo")
+├── Server Actions: registrieren · einloggen · ausloggen · Reset anfordern · Passwort setzen
+└── Validierung: gemeinsame Zod-Schemas (Client + Server) via react-hook-form
+```
+
+### B) Datenmodell (Erweiterung aus PROJ-1)
+**`profiles`** bekommt zwei zusätzliche Felder:
+- `consent_accepted_at` — Zeitpunkt der DSGVO-Zustimmung
+- `privacy_version` — akzeptierte Version der Datenschutzerklärung
+
+Befüllung automatisch beim Anlegen des Kontos (Erweiterung des `handle_new_user`-Triggers: Version aus Registrierungs-Metadaten, Zeitstempel aus Kontoanlage). `full_name` bereits vorhanden. Keine neue Tabelle, kein anonymer Datensatz.
+
+### C) Technische Entscheidungen
+Siehe Tabelle „Technical Decisions" im Decision Log oben.
+
+### D) Abhängigkeiten
+Keine neuen Pakete. Vorhanden: `@supabase/ssr`, `react-hook-form`, `zod`, `@hookform/resolvers`, `sonner`, shadcn `form/input/label/button/card/checkbox/alert`.
+
+### E) Notwendige Dashboard-Konfiguration (manuell, analog PROJ-1)
+- Auth → Passwort-Policy im Supabase-Dashboard ebenfalls auf min. 8 Zeichen + erforderliche Zeichenklassen setzen (serverseitige Durchsetzung zusätzlich zur Client-Validierung)
+- Redirect-URLs für `/auth/callback` hinterlegen (lokal `http://localhost:3000/auth/callback`)
+
+### F) Sicherheitsdetails
+- Kein User-Enumeration: neutrale Meldungen bei Registrierung & Reset
+- „returnTo"-Allowlist: nur interne Pfade zulassen (Schutz vor Open-Redirect)
+- Keine PII in Logs/Fehlermeldungen
 
 ## QA Test Results
 _To be added by /qa_
