@@ -23,6 +23,16 @@ const config = [
       "react-hooks/purity": "off",
     },
   },
+  {
+    // Bewusst ungenutzte Argumente/Variablen mit _-Präfix erlauben
+    // (z.B. Platzhalter-Signaturen, die später implementiert werden).
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
 ];
 
 export default config;

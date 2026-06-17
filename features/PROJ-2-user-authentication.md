@@ -1,6 +1,6 @@
 # PROJ-2: User Authentication
 
-## Status: Architected
+## Status: In Progress
 **Created:** 2026-06-17
 **Last Updated:** 2026-06-17
 
@@ -165,6 +165,35 @@ Keine neuen Pakete. Vorhanden: `@supabase/ssr`, `react-hook-form`, `zod`, `@hook
 - Kein User-Enumeration: neutrale Meldungen bei Registrierung & Reset
 - „returnTo"-Allowlist: nur interne Pfade zulassen (Schutz vor Open-Redirect)
 - Keine PII in Logs/Fehlermeldungen
+
+## Implementation Notes (Frontend)
+**Stand:** 2026-06-17 — Branch `develop`
+
+**Seiten (alle gebaut, Build grün, 9 Routen):**
+- `/` — öffentliche Startseite (Hero, „Antrag starten" deaktiviert bis PROJ-3, Login/Registrieren, Datenschutz-Link)
+- `(auth)/registrieren`, `/login`, `/passwort-vergessen`, `/passwort-zuruecksetzen` — zentriertes Card-Layout (Route-Group `(auth)`)
+- `/datenschutz` — Platzhalterseite mit `PRIVACY_VERSION`
+- `/dashboard` — Begrüßung + „Neuen Antrag starten" (deaktiviert bis PROJ-3) + „Meine Anträge"-Platzhalter (PROJ-4) + Abmelden
+
+**Komponenten (`src/components/auth/`):**
+- `register-form`, `login-form`, `forgot-password-form`, `reset-password-form` — react-hook-form + zodResolver, shadcn `form/input/checkbox/button/card`, sonner-Toasts
+- `password-strength-meter` — nutzt reine Funktion `evaluatePasswordStrength`
+
+**Logik/Validierung:**
+- `src/lib/validation/auth.ts` — gemeinsame Zod-Schemas (register/login/forgot/reset), Passwort-Policy (8+, Buchstabe, Ziffer), Consent als `literal(true)`
+- `src/lib/validation/password-strength.ts` (+ Unit-Test, 5 Fälle) — Score 0–4
+- `src/lib/constants.ts` — `PRIVACY_VERSION`
+- `src/app/layout.tsx` — `lang="de"`, Sonner-`Toaster`, Metadaten-Template
+
+**Bewusst noch Platzhalter (→ /backend):**
+- `src/lib/actions/auth.ts` — Server-Actions als Platzhalter (TODO-markiert); geben aktuell „Server-Logik folgt" zurück. Echte Supabase-Aufrufe, Consent-Speicherung, `/auth/callback`, Redirects in `/backend`
+- Routenschutz (Middleware-Logik) + Begrüßungsname aus Profil → `/backend`
+
+**Tests/Qualität:** `tsc --noEmit` sauber · `npm run lint` 0 Errors · `npm run build` grün · `npm test` 10/10.
+
+**Follow-ups für /backend:**
+- `middleware.ts` → `proxy.ts` umbenennen (Next-16-Deprecation) und dabei Routenschutz + returnTo ergänzen
+- ESLint-Config erlaubt jetzt `_`-präfixierte ungenutzte Args (für Platzhalter-Signaturen)
 
 ## QA Test Results
 _To be added by /qa_
