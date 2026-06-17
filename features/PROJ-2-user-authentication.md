@@ -1,6 +1,6 @@
 # PROJ-2: User Authentication
 
-## Status: In Progress
+## Status: Approved
 **Created:** 2026-06-17
 **Last Updated:** 2026-06-17
 
@@ -224,7 +224,72 @@ Keine neuen Pakete. Vorhanden: `@supabase/ssr`, `react-hook-form`, `zod`, `@hook
 **Für QA zu prüfen:** realer Signup→Bestätigungslink→Login-Flow (PKCE/`code`-Parameter im Callback), Reset-Flow, Routenschutz inkl. returnTo.
 
 ## QA Test Results
-_To be added by /qa_
+
+**Tested:** 2026-06-17
+**Umgebung:** dev (`xctlfuhwnhknzqqibmgm`) · Vitest · Playwright (Chromium + Mobile Safari/iPhone 13) · GoTrue-Auth-Endpoint · DB-Verifikation
+**Tester:** QA Engineer (AI)
+
+### Acceptance Criteria Status
+
+#### Registrierung
+- [x] Consent-Checkbox nicht gesetzt → Absenden blockiert, Hinweis (E2E)
+- [x] Passwort-Policy verletzt → Validierungsfehler + Stärkeanzeige (E2E)
+- [x] Passwörter ungleich → Fehler (E2E)
+- [x] Konto erstellt → `profiles`-Eintrag mit Name + Consent (DB-Trigger-Test)
+- [x] Bereits registrierte E-Mail → kein Enumeration (Supabase-Obfuskation + neutrale Meldung; by design)
+- [~] Registrierung → Bestätigungsmail: Logik (`signUp` + `emailRedirectTo`) verifiziert; **echter Mailversand manuell zu prüfen**
+
+#### E-Mail-Bestätigung (Double-Opt-In)
+- [x] Unbestätigtes Konto → Login verweigert (`email_not_confirmed` via GoTrue verifiziert; Action zeigt freundlichen Hinweis)
+- [~] Bestätigungslink → Aktivierung: `/auth/callback` + `exchangeCodeForSession` korrekt; **Link-Round-Trip manuell zu prüfen**
+
+#### Login / Logout
+- [x] Korrekte Daten (bestätigt) → Login erfolgreich (GoTrue liefert `access_token`; geseedeter Nutzer)
+- [x] Falsche Daten → neutrale Meldung (`invalid_credentials`); Passwortfeld wird zurückgesetzt, übrige Eingabe bleibt
+- [x] Abmelden → `signOut` + Redirect auf öffentliche Seite (Logik)
+
+#### Passwort-Reset
+- [x] Passwort vergessen → immer neutrale Bestätigung, kein Enumeration (E2E)
+- [~] Gültiger Reset-Link → neues Passwort: `updateUser` + Callback korrekt; **Round-Trip manuell zu prüfen**
+- [ ] Abgelaufener/ungültiger Link → **klarer Fehler**: redirect auf `/login?error=auth` erfolgt, aber **ohne erklärende Meldung** → siehe BUG-1
+
+#### Routenschutz
+- [x] Nicht eingeloggt + `/dashboard` → Redirect `/login?returnTo=%2Fdashboard` (HTTP 307 + E2E)
+- [x] Eingeloggt + Gast-Seite → Redirect `/dashboard` (Middleware-Logik; Login-Pfad verifiziert)
+- [x] Anonym: öffentliche Seiten ohne Login erreichbar (E2E Startseite/Datenschutz)
+
+### Security Audit
+- [x] Kein User-Enumeration (Registrierung obfuskiert, Login/Reset neutral)
+- [x] Open-Redirect-Schutz: `safeRedirectPath` (Unit-Tests) in Login-`returnTo` und Callback-`next`
+- [x] Passwort-Hashing bcrypt (Supabase; im Seed-Test bestätigt)
+- [x] Keine Secrets clientseitig außer Publishable-Key (öffentlich per Design; RLS schützt)
+- [x] Eingaben via Zod validiert (Client + Server); Supabase parametrisiert
+- [x] Routenschutz serverseitig (Middleware/`proxy.ts`), nicht nur clientseitig
+
+### Tests
+- Unit (Vitest): 15/15 grün (`env`, `password-strength`, `safe-redirect`)
+- E2E (Playwright): 22/22 grün (11 Fälle × Chromium + Mobile Safari) — `tests/PROJ-2-user-authentication.spec.ts`
+- `tsc` sauber · `npm run lint` 0 Errors · `npm run build` grün
+
+### Bugs Found
+
+#### BUG-1: Ungültiger/abgelaufener Auth-Link ohne erklärende Meldung
+- **Severity:** Low
+- **Reproduktion:** Bestätigungs-/Reset-Link mit ungültigem/abgelaufenem Code öffnen → `/auth/callback` leitet auf `/login?error=auth`
+- **Erwartet:** klarer Hinweis („Link ungültig/abgelaufen — bitte neu anfordern")
+- **Tatsächlich:** Redirect ohne Meldung; Wiederanforderung nur über den vorhandenen „Passwort vergessen?"-Link erreichbar (kein funktionaler Bruch)
+- **Empfohlener Fix (für /frontend):** `error`-Query auf `/login` (und ggf. `/passwort-vergessen`) auswerten und Hinweis anzeigen
+- **Priority:** Fix in next sprint
+
+### Hinweise / manuell zu verifizieren (kein Bug, umgebungsabhängig)
+- Realer Smoke-Test vor Deploy: **eine echte Registrierung** durchführen → Bestätigungsmail erhalten → Link → `/auth/callback` → Login; analog ein Passwort-Reset. Prüft Mailversand + Link-Format (PKCE-`code`).
+- Empfehlung: **Leaked Password Protection** im Dashboard aktivieren (Advisor-Hinweis).
+
+### Summary
+- **Acceptance Criteria:** Kernpfade verifiziert; 4 ACs „logik-/teilverifiziert" (echter Mail-Round-Trip manuell), 1 Low-Bug (BUG-1)
+- **Bugs:** 1 total (0 critical, 0 high, 0 medium, 1 low)
+- **Security:** Pass
+- **Production Ready:** **YES** (keine Critical/High-Bugs) — empfohlen: manueller Mail-Smoke-Test + BUG-1 später beheben
 
 ## Deployment
 _To be added by /deploy_
