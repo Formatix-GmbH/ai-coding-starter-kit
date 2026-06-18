@@ -1,6 +1,6 @@
 # PROJ-11: FlexCover Formulardefinition
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-06-18
 **Last Updated:** 2026-06-18
 
@@ -69,6 +69,7 @@
 - [ ] Vollständige Label-Liste aus den XDP-`<caption>` beim Build extrahieren (Detailarbeit)
 - [ ] Wenige XFA-Spezialvalidierungen prüfen, ob deklarativ abbildbar oder Custom-Handler nötig (Erwartung: fast alles deklarativ)
 - [ ] Optional: Bestätigungsdialog beim Entfernen einer Wiederhol-Instanz (XFA hat ihn) — MVP ja/nein?
+- [x] Route-Name: `/antrag/flexcover` (zukunftssicher für Multi-Form) — geklärt
 
 ## Decision Log
 
@@ -88,12 +89,59 @@
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| Engine um Vergleichsoperatoren `gt/gte/lt/lte` erweitern | FlexCover braucht Zahlenvergleich für Sichtbarkeit (`anzahlStandorteAusland > 0`); generisch wiederverwendbar | 2026-06-18 |
+| Definition als typisiertes TS-Modul (`src/lib/forms/flexcover/definition.ts`) | Compile-Zeit-Sicherheit gegen FormDefinition; refactoring-fest | 2026-06-18 |
+| Ablage unter `src/lib/forms/flexcover/` (Definition + Handler) | Trennt „Formulare" (Definitionen) klar von „Engine" | 2026-06-18 |
+| Route `/antrag/flexcover`, anonym zugänglich | Auth-Modell (Ausfüllen ohne Login); zukunftssicher für Multi-Form | 2026-06-18 |
+| Submit zeigt vorerst Bestätigung | PDF/Persistenz = PROJ-5/6; Engine-Submit-Event ist die Andockstelle | 2026-06-18 |
+| Keine neuen Pakete | Engine + Operator-Erweiterung genügen | 2026-06-18 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Überblick
+Konfiguration auf der Engine, kein neuer Engine-Kern. Es entstehen: (1) kleine Engine-Erweiterung (Vergleichsoperatoren), (2) FlexCover-Definition (XSD-konforme Keys; Typen/Labels/Logik aus XDP), (3) Seite, die das Formular rendert.
+
+### A) Bausteine
+```
+src/lib/form-engine/conditions  → + Operatoren gt/gte/lt/lte
+src/lib/forms/flexcover/
+├── definition.ts   → FlexCover-FormDefinition (typisiert)
+└── handlers.ts     → HandlerRegistry (voraussichtlich leer/minimal)
+src/app/antrag/flexcover/page.tsx
+└── <FormEngine definition={flexcover} /> (anonym); verlinkt von Landing + Dashboard
+```
+
+### B) XDP → Engine-Feldtyp (Übersetzungstabelle)
+| XDP-Quelle | Engine-Feldtyp |
+|---|---|
+| `textEdit` einzeilig | `text` |
+| `textEdit` `multiLine` | `textarea` |
+| `numericEdit` / Zahl-`picture` | `integer` / `decimal` |
+| Zahl-`picture` Währung | `currency` |
+| Zahl-`picture` Prozent | `percent` |
+| `dateTimeEdit` | `date` |
+| Jahr (YYYY) | `year` |
+| `choiceList` | `select` |
+| `checkButton` in `exclGroup` | `yesno` |
+| einzelner `checkButton` | `checkbox` |
+| E-Mail/PLZ (Name/Validierung) | `email` / `plz` |
+
+Name/Verschachtelung ← XSD; Typ/Label/Logik ← XDP.
+
+### C) Übersetzungs-Vorgehen (Build)
+Abschnittsweise: XDP-Felder (caption, ui, picture, validate, script) → XSD-Namen → Engine-Knoten. Sichtbarkeits-Skripte → deklarative `visibleWhen` (Flag=Ja → `eq`; Zahl>0 → `gt`); bedingte Pflicht = `required` + `visibleWhen`. Sehr wenige Sonderfälle als benannte Handler.
+
+### D) Datenmodell
+Ausgabe = verschachteltes JSON in XSD-Struktur (`Ansprechpartner.email`, `Investitionen.Invest.jahr1`, `Unternehmen.Beguenstigter[]` …).
+
+### E) Absenden
+Vorerst Bestätigung; PDF-Download (PROJ-5) dockt am Submit-Event an.
+
+### F) Abhängigkeiten
+Keine neuen Pakete.
 
 ## QA Test Results
 _To be added by /qa_
