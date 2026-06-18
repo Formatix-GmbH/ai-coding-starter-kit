@@ -14,7 +14,7 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger�
 |----------|---------|--------|
 | P0 (MVP) | Supabase Infrastructure Setup | Planned |
 | P0 (MVP) | User Authentication (Register, Login, Passwort-Reset) | Planned |
-| P0 (MVP) | Dynamic Form Engine (definitionsgesteuert: Feldtypen, Sichtbarkeitslogik, Validierung, Wiederholgruppen, Tabellen) | Roadmap |
+| P0 (MVP) | Dynamic Form Engine (definitionsgesteuert: Feldtypen, Sichtbarkeitslogik, Validierung, Wiederholgruppen, Tabellen) | Planned |
 | P0 (MVP) | FlexCover Formulardefinition (Beispielformular auf der Engine) | Roadmap |
 | P0 (MVP) | Formular-Entwurf & Auto-Save | Roadmap |
 | P0 (MVP) | PDF-Generierung & Download | Roadmap |
@@ -22,6 +22,8 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger�
 | P1 | PDF-Versand per E-Mail | Roadmap |
 | P1 | KI-gestützte Formularausfüllung | Roadmap |
 | P1 | Admin Dashboard (Antragsübersicht) | Roadmap |
+| P1 | Datei-Upload & Unterschrift (Engine-Erweiterung) | Roadmap |
+| P1 | Externe Übermittlung / Webhook (Absende-Ziele) | Roadmap |
 | P2 | Multi-Form / Multi-Mandanten-Verwaltung (mehrere Definitionen, Kundentrennung) | Roadmap |
 
 ## Success Metrics
