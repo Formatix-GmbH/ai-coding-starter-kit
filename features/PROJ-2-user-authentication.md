@@ -237,11 +237,11 @@ Keine neuen Pakete. Vorhanden: `@supabase/ssr`, `react-hook-form`, `zod`, `@hook
 - [x] Passwörter ungleich → Fehler (E2E)
 - [x] Konto erstellt → `profiles`-Eintrag mit Name + Consent (DB-Trigger-Test)
 - [x] Bereits registrierte E-Mail → kein Enumeration (Supabase-Obfuskation + neutrale Meldung; by design)
-- [~] Registrierung → Bestätigungsmail: Logik (`signUp` + `emailRedirectTo`) verifiziert; **echter Mailversand manuell zu prüfen**
+- [x] Registrierung → Bestätigungsmail (manueller Smoke-Test 2026-06-18: Mail erhalten, Konto angelegt)
 
 #### E-Mail-Bestätigung (Double-Opt-In)
 - [x] Unbestätigtes Konto → Login verweigert (`email_not_confirmed` via GoTrue verifiziert; Action zeigt freundlichen Hinweis)
-- [~] Bestätigungslink → Aktivierung: `/auth/callback` + `exchangeCodeForSession` korrekt; **Link-Round-Trip manuell zu prüfen**
+- [x] Bestätigungslink → Aktivierung: `/auth/callback` + `exchangeCodeForSession` (manueller Smoke-Test 2026-06-18: Link → Dashboard, eingeloggt, korrekter Name)
 
 #### Login / Logout
 - [x] Korrekte Daten (bestätigt) → Login erfolgreich (GoTrue liefert `access_token`; geseedeter Nutzer)
@@ -250,7 +250,7 @@ Keine neuen Pakete. Vorhanden: `@supabase/ssr`, `react-hook-form`, `zod`, `@hook
 
 #### Passwort-Reset
 - [x] Passwort vergessen → immer neutrale Bestätigung, kein Enumeration (E2E)
-- [~] Gültiger Reset-Link → neues Passwort: `updateUser` + Callback korrekt; **Round-Trip manuell zu prüfen**
+- [x] Gültiger Reset-Link → neues Passwort: `updateUser` + Callback (manueller Smoke-Test 2026-06-18: Reset-Mail → Link → neues Passwort → Login)
 - [ ] Abgelaufener/ungültiger Link → **klarer Fehler**: redirect auf `/login?error=auth` erfolgt, aber **ohne erklärende Meldung** → siehe BUG-1
 
 #### Routenschutz
@@ -286,10 +286,10 @@ Keine neuen Pakete. Vorhanden: `@supabase/ssr`, `react-hook-form`, `zod`, `@hook
 - Empfehlung: **Leaked Password Protection** im Dashboard aktivieren (Advisor-Hinweis).
 
 ### Summary
-- **Acceptance Criteria:** Kernpfade verifiziert; 4 ACs „logik-/teilverifiziert" (echter Mail-Round-Trip manuell), 1 Low-Bug (BUG-1)
+- **Acceptance Criteria:** alle Kernpfade verifiziert; Mail-Round-Trip (Bestätigung + Reset) per manuellem Smoke-Test am 2026-06-18 bestätigt; 1 Low-Bug (BUG-1)
 - **Bugs:** 1 total (0 critical, 0 high, 0 medium, 1 low)
 - **Security:** Pass
-- **Production Ready:** **YES** (keine Critical/High-Bugs) — empfohlen: manueller Mail-Smoke-Test + BUG-1 später beheben
+- **Production Ready:** **YES** (keine Critical/High-Bugs) — BUG-1 später beheben
 
 ## Deployment
 _To be added by /deploy_
