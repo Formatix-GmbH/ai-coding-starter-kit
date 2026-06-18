@@ -214,7 +214,55 @@ Engine-MVP validiert clientseitig (Live-UX). Da Validierung aus **isomorpher** Z
 **Für QA (PROJ-3):** E2E gegen `/form-demo` — Sichtbarkeit, Validierung/Fehlerzähler, verschachtelte Wiederholgruppen, Tabellen, berechnetes Feld, Custom-Validator, Reset, Absenden; finales JSON-Schema bleibt wie gebaut.
 
 ## QA Test Results
-_To be added by /qa_
+
+**Tested:** 2026-06-18
+**Umgebung:** Vitest · Playwright (Chromium + Mobile Safari) gegen `/form-demo`
+**Tester:** QA Engineer (AI)
+
+### Acceptance Criteria Status
+- [x] Rendering aus Definition (Tabs aus Demo-Definition) — E2E
+- [x] Feldtypen rendern (Demo deckt select/email/text/decimal/currency/plz/date/yesno ab) — E2E + manuell
+- [x] Layout Tabs inkl. Fehlerzähler pro Reiter — E2E (Validierungstest)
+- [x] Dynamische Sichtbarkeit (Beschreibung nur bei Verlagerung=Ja) — E2E
+- [x] Ausgeblendetes Pflichtfeld blockiert Abgabe nicht — Unit (`validateForm`)
+- [x] Validierung Pflichtfeld/Muster/Bereich + Gesamtprüfung beim Absenden — E2E + Unit
+- [x] Feldübergreifende Plausibilität via Custom-Handler (a+b>100) — E2E + Unit
+- [x] Berechnetes read-only Feld (Summe a+b) aktualisiert live — E2E
+- [x] Wiederholgruppen inkl. **verschachtelt** (Begünstigter → Ansprechpartner) — E2E
+- [x] Tabellen: feste Zeilen + dynamische Zeilen (Land hinzufügen) — E2E + manuell
+- [x] „Versenden": Gesamtvalidierung + strukturierte (geprunte) Ausgabe — E2E (Erfolgsfall) + Unit (`pruneHiddenValues`)
+- [ ] „Zurücksetzen" leert das Formular — **fehlgeschlagen, siehe BUG-1**
+- [x] Anonym nutzbar (Demo ohne Login erreichbar) — E2E
+- [x] Responsiv (Chromium Desktop + Mobile Safari/iPhone 13) — gesamte E2E-Suite läuft auf beiden
+
+### Security Audit
+- [x] Kein `eval`/Ausführen beliebiger Strings — nur registrierte Handler (Modell A)
+- [x] Keine Secrets/Netzwerkaufrufe in der Engine (reine Client-Logik)
+- [x] Eingaben über zod typ-/musterevalidiert; deutsche Zahlen sicher geparst
+- [x] Ausgeblendete Felder werden nicht gesendet (Datenminimierung, Unit-getestet)
+
+### Tests
+- Unit (Vitest): **38/38** grün (inkl. conditions/calculations/validation/output der Engine)
+- E2E (Playwright): **38 passed, 2 skipped** (Reset-Bug, beide Browser) — `tests/PROJ-3-form-engine.spec.ts`
+- `tsc` sauber · `npm run lint` 0 Errors · `npm run build` grün
+- Keine Regression in PROJ-2 (E2E mitgelaufen)
+
+### Bugs Found
+
+#### BUG-1: „Zurücksetzen" leert die Formulareingaben nicht
+- **Severity:** Medium
+- **Reproduktion:** `/form-demo` → E-Mail ausfüllen → „Zurücksetzen" → Dialog „Zurücksetzen" bestätigen → Feld behält den Wert
+- **Erwartet:** alle Eingaben werden geleert
+- **Tatsächlich:** Dialog schließt, Werte bleiben (kein funktionaler Bruch des Kernflusses; Workaround: Seite neu laden)
+- **Diagnose:** RHF `reset(defaultValues={})` leert die registrierten Felder nicht. Parallel-Test „erfolgreiches Absenden" beweist, dass Fill→RHF warm funktioniert → kein Test-/Hydrationsartefakt.
+- **Empfohlener Fix (für /frontend):** Reset robust ausführen (z.B. explizit geleerte Werte-Struktur an `reset()` übergeben bzw. Felder gezielt clearen) und E2E `test.fixme` → `test` umstellen.
+- **Priority:** Vor Approval beheben (Reset ist eine dokumentierte AC)
+
+### Summary
+- **Acceptance Criteria:** 13/14 bestanden; 1 fehlgeschlagen (BUG-1, Reset)
+- **Bugs:** 1 total (0 critical, 0 high, **1 medium**, 0 low)
+- **Security:** Pass
+- **Production Ready:** Nach strenger Regel (keine Critical/High) wäre es deploybar — **Empfehlung dennoch: BUG-1 zuerst beheben**, da Reset eine AC ist und die Engine das Fundament bildet. Status bleibt vorerst **In Review**.
 
 ## Deployment
 _To be added by /deploy_
