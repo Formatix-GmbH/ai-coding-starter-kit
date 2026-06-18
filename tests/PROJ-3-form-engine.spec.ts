@@ -94,9 +94,7 @@ test("dynamische Tabelle: Land hinzufügen erzeugt eine Zeile", async ({ page })
   await expect(page.locator('[name="zahlen.laender.0.betrag"]')).toBeVisible();
 });
 
-// BEKANNTER BUG-1 (Medium): reset() leert die Eingaben nicht. Aktivieren,
-// sobald behoben (test.fixme → test).
-test.fixme("Zurücksetzen leert die Eingaben (nach Bestätigung)", async ({ page }) => {
+test("Zurücksetzen leert die Eingaben (nach Bestätigung)", async ({ page }) => {
   await fillStable(byId(page, "kontakt.email"), "test@firma.de");
   await page.getByRole("button", { name: "Zurücksetzen" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Zurücksetzen" }).click();

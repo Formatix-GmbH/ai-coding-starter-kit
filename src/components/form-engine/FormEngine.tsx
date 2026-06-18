@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import type { FieldNode, FormDefinition, FormValues, SectionNode } from "@/lib/form-engine/types";
 import { HandlerRegistry, emptyRegistry } from "@/lib/form-engine/handlers";
 import { validateForm, validateField } from "@/lib/form-engine/validation";
-import { pruneHiddenValues } from "@/lib/form-engine/output";
+import { pruneHiddenValues, buildEmptyValues } from "@/lib/form-engine/output";
 import { evaluateCondition } from "@/lib/form-engine/conditions";
 import { FormEngineProvider } from "./context";
 import { NodeRenderer } from "./nodes";
@@ -86,7 +86,9 @@ export function FormEngine({
   };
 
   const handleReset = () => {
-    reset(defaultValues as FieldValues);
+    // Auf ein vollständiges leeres Gerüst zurücksetzen, damit alle registrierten
+    // Felder zuverlässig geleert werden (reset({}) lässt Felder sonst stehen).
+    reset(buildEmptyValues(definition) as FieldValues);
     clearErrors();
   };
 

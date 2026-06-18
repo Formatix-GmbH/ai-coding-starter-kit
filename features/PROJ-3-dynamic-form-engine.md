@@ -1,6 +1,6 @@
 # PROJ-3: Dynamic Form Engine
 
-## Status: In Progress
+## Status: Approved
 **Created:** 2026-06-18
 **Last Updated:** 2026-06-18
 
@@ -231,7 +231,7 @@ Engine-MVP validiert clientseitig (Live-UX). Da Validierung aus **isomorpher** Z
 - [x] Wiederholgruppen inkl. **verschachtelt** (Begünstigter → Ansprechpartner) — E2E
 - [x] Tabellen: feste Zeilen + dynamische Zeilen (Land hinzufügen) — E2E + manuell
 - [x] „Versenden": Gesamtvalidierung + strukturierte (geprunte) Ausgabe — E2E (Erfolgsfall) + Unit (`pruneHiddenValues`)
-- [ ] „Zurücksetzen" leert das Formular — **fehlgeschlagen, siehe BUG-1**
+- [x] „Zurücksetzen" leert das Formular — E2E (nach BUG-1-Fix)
 - [x] Anonym nutzbar (Demo ohne Login erreichbar) — E2E
 - [x] Responsiv (Chromium Desktop + Mobile Safari/iPhone 13) — gesamte E2E-Suite läuft auf beiden
 
@@ -242,14 +242,15 @@ Engine-MVP validiert clientseitig (Live-UX). Da Validierung aus **isomorpher** Z
 - [x] Ausgeblendete Felder werden nicht gesendet (Datenminimierung, Unit-getestet)
 
 ### Tests
-- Unit (Vitest): **38/38** grün (inkl. conditions/calculations/validation/output der Engine)
-- E2E (Playwright): **38 passed, 2 skipped** (Reset-Bug, beide Browser) — `tests/PROJ-3-form-engine.spec.ts`
+- Unit (Vitest): **39/39** grün (inkl. conditions/calculations/validation/output/buildEmptyValues)
+- E2E (Playwright): **40 passed** (Chromium + Mobile Safari, inkl. Reset nach Fix) — `tests/PROJ-3-form-engine.spec.ts`
 - `tsc` sauber · `npm run lint` 0 Errors · `npm run build` grün
 - Keine Regression in PROJ-2 (E2E mitgelaufen)
 
 ### Bugs Found
 
-#### BUG-1: „Zurücksetzen" leert die Formulareingaben nicht
+#### BUG-1: „Zurücksetzen" leert die Formulareingaben nicht  ✅ BEHOBEN (2026-06-18)
+- **Status:** Behoben — `handleReset` setzt jetzt auf ein aus der Definition abgeleitetes leeres Werte-Gerüst (`buildEmptyValues`) zurück statt `reset({})`. E2E-Test reaktiviert (grün, beide Browser).
 - **Severity:** Medium
 - **Reproduktion:** `/form-demo` → E-Mail ausfüllen → „Zurücksetzen" → Dialog „Zurücksetzen" bestätigen → Feld behält den Wert
 - **Erwartet:** alle Eingaben werden geleert
@@ -258,11 +259,11 @@ Engine-MVP validiert clientseitig (Live-UX). Da Validierung aus **isomorpher** Z
 - **Empfohlener Fix (für /frontend):** Reset robust ausführen (z.B. explizit geleerte Werte-Struktur an `reset()` übergeben bzw. Felder gezielt clearen) und E2E `test.fixme` → `test` umstellen.
 - **Priority:** Vor Approval beheben (Reset ist eine dokumentierte AC)
 
-### Summary
-- **Acceptance Criteria:** 13/14 bestanden; 1 fehlgeschlagen (BUG-1, Reset)
-- **Bugs:** 1 total (0 critical, 0 high, **1 medium**, 0 low)
+### Summary (aktualisiert nach BUG-1-Fix, 2026-06-18)
+- **Acceptance Criteria:** 14/14 bestanden
+- **Bugs:** 1 total (1 medium → **behoben**)
 - **Security:** Pass
-- **Production Ready:** Nach strenger Regel (keine Critical/High) wäre es deploybar — **Empfehlung dennoch: BUG-1 zuerst beheben**, da Reset eine AC ist und die Engine das Fundament bildet. Status bleibt vorerst **In Review**.
+- **Production Ready:** **YES** (keine offenen Bugs; alle ACs erfüllt)
 
 ## Deployment
 _To be added by /deploy_

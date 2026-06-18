@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pruneHiddenValues } from "./output";
+import { pruneHiddenValues, buildEmptyValues } from "./output";
 import type { FormDefinition } from "./types";
 
 const definition: FormDefinition = {
@@ -46,5 +46,16 @@ describe("pruneHiddenValues", () => {
     });
     const s = out.s as Record<string, unknown>;
     expect((s.liste as unknown[]).length).toBe(2);
+  });
+});
+
+describe("buildEmptyValues", () => {
+  it("erzeugt leere Werte je Feldtyp/Knoten (für zuverlässiges Reset)", () => {
+    const out = buildEmptyValues(definition);
+    const s = out.s as Record<string, unknown>;
+    expect(s.flag).toBe("");
+    expect(s.grund).toBe("");
+    expect(Array.isArray(s.liste)).toBe(true);
+    expect((s.liste as unknown[]).length).toBe(0);
   });
 });
