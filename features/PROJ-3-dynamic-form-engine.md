@@ -1,6 +1,6 @@
 # PROJ-3: Dynamic Form Engine
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-06-18
 **Last Updated:** 2026-06-18
 
@@ -94,13 +94,14 @@
 - **Sicherheit:** kein Ausführen beliebiger Strings als Code im MVP (nur registrierte Handler)
 
 ## Open Questions
-- [ ] Genaues Definition-Format (JSON-Struktur, Schema) → `/architecture`
-- [ ] Custom-Handler-Registry: Mechanismus + ob Handler client-/serverseitig (isomorph) laufen → `/architecture`
-- [ ] Wie Modell B (sandboxed Definition-JS) später andockt → `/architecture`
-- [ ] Repräsentation des rekursiven Datenmodells → `/architecture`
-- [ ] Verhalten der Werte ausgeblendeter Felder (verwerfen vs. behalten) → `/architecture`
-- [ ] Wird die Validierungslogik client+server geteilt? → `/architecture` (verbindliche Prüfung beim Absenden = PROJ-6)
-- [ ] Generische Einreichungs-Speicherung als JSONB-Dokument pro Definition + Dispatch der Absende-Ziele → `/architecture`
+- [x] Custom-Handler-Registry: benannte Funktionen, **isomorph** (client+server) — geklärt (/architecture)
+- [x] Modell B andockbar am einheitlichen HandlerRegistry-Aufruf — geklärt
+- [x] Rekursives Datenmodell: verschachteltes Objekt, das die Definition spiegelt — geklärt
+- [x] Ausgeblendete Felder: **nicht validiert & nicht gesendet** (Variante A) — geklärt
+- [x] Validierung isomorph (Zod), serverseitig verbindlich in PROJ-6 — geklärt
+- [x] Definition-Ablage: **Repo-Datei im MVP**, DB → PROJ-10 — geklärt
+- [x] Einreichung als JSON-Dokument; Absende-Ziele via SubmitDispatcher — geklärt
+- [ ] **Finales JSON-Schema der Definition** wird zu Beginn der Build-Phase (`/frontend`) festgeschrieben — Detailarbeit, kein Blocker
 
 ## Decision Log
 
@@ -122,12 +123,65 @@
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| react-hook-form als Zustands-Engine | Vorhanden; `useFieldArray` deckt (verschachtelte) Wiederholgruppen & dynamische Tabellen; `watch` treibt Sichtbarkeit/Berechnung | 2026-06-18 |
+| Validierung: Zod **dynamisch aus der Definition** gebaut | Vorhandener Stack; isomorph (client+server); via `zodResolver` an RHF; zusammensetzbar für Verschachtelung | 2026-06-18 |
+| Rekursiver NodeRenderer + Feldtyp-Register | Eine Stelle pro Feldtyp; Verschachtelung „kostenlos"; neuer Feldtyp = Register-Eintrag | 2026-06-18 |
+| Deklarative Logik + benannte Handler (Modell A), isomorph | Einfache Fälle ohne Code; komplexe Logik als geprüfter TS-Code; gleiche Funktion client+server; kein `eval` | 2026-06-18 |
+| Deutsche Zahlen/Währung über eingebautes `Intl` | Kein Zusatzpaket, konsistente Formatierung | 2026-06-18 |
+| **Definition als Repo-Datei im MVP** (DB später → PROJ-10) | Einfachster, sicherer Start; Engine bleibt quellunabhängig (bekommt ein Definition-Objekt) | 2026-06-18 |
+| **Ausgeblendete Felder: nicht validiert & nicht gesendet** | Keine Geister-Pflichtfelder; saubere Daten; DSGVO-Datenminimierung | 2026-06-18 |
+| Rekursives Datenmodell (verschachteltes Objekt spiegelt Definition) | Ein- und Ausgabe identisch; beliebige Tiefe; als JSON persistierbar (PROJ-4/6) | 2026-06-18 |
+| Keine neuen Pakete | RHF, zod, @hookform/resolvers, shadcn, Intl decken alles ab | 2026-06-18 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Grundidee
+Die Engine ist ein **rekursiver Interpreter**: Sie liest eine **Definition** (Baum aus Abschnitten, Feldern, Gruppen, Tabellen) und baut daraus zur Laufzeit Formular, Validierung und Logik — kein formular-spezifischer UI-Code.
+
+### A) Bausteine
+```
+FormEngine (bekommt eine Definition)
+├── DefinitionLoader/Validator  → prüft, ob die Definition wohlgeformt ist
+├── FormProvider (Zustand)       → react-hook-form hält alle Werte
+├── LayoutRenderer               → Tabs | Wizard | Einseitig
+│   └── SectionRenderer
+│       └── NodeRenderer (REKURSIV) → je Knotentyp:
+│            ├── FieldRenderer        → Feldtyp-Register (Text, Zahl, Währung, Auswahl, Ja/Nein, Datum …)
+│            ├── RepeatGroupRenderer  → Instanzen (+/–), ruft NodeRenderer (Verschachtelung)
+│            └── TableRenderer        → Raster (feste/dynamische Zeilen)
+├── LogicEngine
+│   ├── VisibilityEvaluator   → Sichtbarkeitsregeln aus den Werten
+│   ├── CalculationEvaluator  → berechnete (read-only) Felder
+│   └── ValidationBuilder     → baut Zod-Prüfregeln dynamisch aus der Definition
+├── HandlerRegistry           → benannte JS/TS-Funktionen (Modell A), isomorph
+└── SubmitDispatcher          → Gesamtvalidierung, strukturierte Daten, „abgesendet" + Absende-Ziele
+```
+Der **NodeRenderer ruft sich selbst auf** → verschachtelte Gruppen/Tabellen beliebiger Tiefe funktionieren automatisch.
+
+### B) Die Definition (Konzept)
+Baum aus Knoten mit Typ (`section`, `field`, `repeatGroup`, `table`) + Eigenschaften. Sichtbarkeit/Validierung/Berechnung stehen **deklarativ am Knoten** (`sichtbarWenn`, `pflicht`, `muster`, `berechne`); komplexe Fälle verweisen per Name auf einen **Handler** (`pruefe: "plausiSummeLaender"`). Das finale JSON-Schema wird zu Beginn der Build-Phase festgeschrieben.
+
+### C) Datenmodell & Ablageort
+- **Werte = Ausgabe**: verschachteltes Objekt, das die Definition spiegelt (Wiederholgruppen = Listen).
+- **Definition im MVP**: versionierte **Datei im Projekt** (mit zugehörigen Handlern). DB-gestützt erst PROJ-10.
+- **Persistenz**: Entwurf/Einreichung speichern dieses Objekt als **JSON-Dokument** (PROJ-4/6).
+- **Ausgeblendete Felder**: nicht validiert, nicht im Ausgabe-Objekt enthalten.
+
+### D) Technische Entscheidungen
+Siehe Tabelle „Technical Decisions" oben.
+
+### E) Abhängigkeiten
+Keine neuen Pakete: `react-hook-form`, `zod`, `@hookform/resolvers`, shadcn (`tabs`, `select`, `radio-group`, `checkbox`, `input`, `textarea`), eingebautes `Intl`.
+
+### F) Validierungs-Grenze (client/server)
+Engine-MVP validiert clientseitig (Live-UX). Da Validierung aus **isomorpher** Zod-/Handler-Logik gebaut wird, kann **PROJ-6** dieselben Regeln serverseitig verbindlich erneut anwenden.
+
+### G) Erweiterungsstellen (reserviert)
+- **Modell B** (sandboxed JS in Definition): andockbar am einheitlichen `HandlerRegistry`-Aufruf.
+- **Absende-Ziele** (PDF/DB/E-Mail/Webhook): `SubmitDispatcher` ruft registrierte Konnektoren nach Definition; neues Ziel = neuer Konnektor.
 
 ## QA Test Results
 _To be added by /qa_
