@@ -1,7 +1,7 @@
 # Product Requirements Document
 
 ## Vision
-FlexCover Antragsportal ist eine DSGVO-konforme Web-App, die den bestehenden XFA-Förderantrag als modernes, responsives Self-Service-Webformular zugänglich macht. Antragsteller füllen den Antrag online aus, speichern Entwürfe und laden am Ende ein statisches PDF herunter. Mittelfristig wird die Plattform zur generischen Formularlösung für mehrere Kunden ausgebaut.
+Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundgerüst (Form-Engine)**, mit dem sich dynamische, komplexe Web-Formulare aus einer Definition (JSON) erstellen lassen — ohne jedes Formular neu zu programmieren. Der bestehende **XFA-FlexCover-Förderantrag dient als erstes, anspruchsvolles Beispielformular** und Härtetest der Engine. Antragsteller füllen Formulare DSGVO-konform online aus, speichern Entwürfe (mit Konto) und erhalten am Ende ein PDF. Mittelfristig trägt die Engine mehrere Formulare und Mandanten.
 
 ## Target Users
 **Ansprechpartner in antragstellenden Unternehmen** — Geschäftsführer, Finanzverantwortliche oder Assistenz, die im Auftrag ihres Unternehmens einen FlexCover-Förderantrag stellen. Sie kennen die Unternehmensdaten, sind aber keine Technikexperten. Sie erwarten ein klares, schrittweises Formular, das Fehler sofort signalisiert und ihre Eingaben sicher speichert.
@@ -14,14 +14,15 @@ FlexCover Antragsportal ist eine DSGVO-konforme Web-App, die den bestehenden XFA
 |----------|---------|--------|
 | P0 (MVP) | Supabase Infrastructure Setup | Planned |
 | P0 (MVP) | User Authentication (Register, Login, Passwort-Reset) | Planned |
-| P0 (MVP) | FlexCover Webformular (9 Abschnitte, dynamische Feldlogik, Validierung) | Roadmap |
+| P0 (MVP) | Dynamic Form Engine (definitionsgesteuert: Feldtypen, Sichtbarkeitslogik, Validierung, Wiederholgruppen, Tabellen) | Roadmap |
+| P0 (MVP) | FlexCover Formulardefinition (Beispielformular auf der Engine) | Roadmap |
 | P0 (MVP) | Formular-Entwurf & Auto-Save | Roadmap |
 | P0 (MVP) | PDF-Generierung & Download | Roadmap |
 | P0 (MVP) | Formular-Einreichung & Bestätigung | Roadmap |
 | P1 | PDF-Versand per E-Mail | Roadmap |
 | P1 | KI-gestützte Formularausfüllung | Roadmap |
 | P1 | Admin Dashboard (Antragsübersicht) | Roadmap |
-| P2 | Generische Formular-Engine (Multi-Form, Multi-Mandant) | Roadmap |
+| P2 | Multi-Form / Multi-Mandanten-Verwaltung (mehrere Definitionen, Kundentrennung) | Roadmap |
 
 ## Success Metrics
 - Ein Antragsteller kann den vollständigen Antrag in einer oder mehreren Sessions ausfüllen und ein korrektes PDF herunterladen
