@@ -1,6 +1,6 @@
 # PROJ-3: Dynamic Form Engine
 
-## Status: Architected
+## Status: In Progress
 **Created:** 2026-06-18
 **Last Updated:** 2026-06-18
 
@@ -182,6 +182,36 @@ Engine-MVP validiert clientseitig (Live-UX). Da Validierung aus **isomorpher** Z
 ### G) Erweiterungsstellen (reserviert)
 - **Modell B** (sandboxed JS in Definition): andockbar am einheitlichen `HandlerRegistry`-Aufruf.
 - **Absende-Ziele** (PDF/DB/E-Mail/Webhook): `SubmitDispatcher` ruft registrierte Konnektoren nach Definition; neues Ziel = neuer Konnektor.
+
+## Implementation Notes (Frontend)
+**Stand:** 2026-06-18 — Branch `develop`
+
+**Engine-Logik (`src/lib/form-engine/`, rein/testbar):**
+- `types.ts` — Definition-Schema (FormDefinition, Section, FieldNode, GroupNode, RepeatGroupNode, TableNode, Condition, Calculation, SubmitTarget)
+- `paths.ts` — `getByPath`/`joinPath`
+- `conditions.ts` — `evaluateCondition` (eq/neq/in/truthy/falsy + all/any, absolute Pfade)
+- `calculations.ts` — `computeValue` (Summe deutscher Zahlen + benannte Handler)
+- `validation.ts` — `buildFieldSchema` (zod, dynamisch), `validateField`, `validateForm` (traversiert Definition, überspringt versteckte Knoten, prüft Wiederhol-min, verschachtelte Instanzen, Tabellen)
+- `output.ts` — `pruneHiddenValues` (versteckte Felder raus = Variante A)
+- `handlers.ts` — `HandlerRegistry` (Modell A, isomorph)
+
+**Renderer (`src/components/form-engine/`):**
+- `FormEngine.tsx` — RHF-Provider, Layout-Modi (Tabs/Wizard/Einseitig), Live-Validierung pro Feld (onBlur) + Gesamtprüfung beim Absenden, Fehlerzähler pro Tab, Reset mit Bestätigungsdialog, Submit liefert geprunte Daten an `onSubmit`
+- `nodes.tsx` — rekursiver `NodeRenderer`, `RepeatGroup` (useFieldArray, **verschachtelt**), `TableView` (feste + dynamische Zeilen)
+- `Field.tsx` — alle Feldtypen (Text, Mehrzeilig, E-Mail, Zahl, Währung, Prozent, Jahr, PLZ, Auswahl, Ja/Nein, Ja/Nein/leer, Checkbox, Datum) + berechnete read-only Felder
+- `context.tsx` — Engine-Kontext
+
+**Demo:** `src/app/form-demo/page.tsx` — Beispiel-Definition mit Tabs, Sichtbarkeitslogik, **verschachtelten** Wiederholgruppen, fester + dynamischer Tabelle, berechnetem Summenfeld und Custom-Validator (`maxHundert`). Unter `/form-demo` aufrufbar.
+
+**Entscheidungen/Notizen:**
+- Datum als natives `<input type=date>` (kein Zusatzpaket); shadcn-Calendar später optional
+- Sichtbarkeits-/Berechnungs-Referenzen nutzen **absolute Pfade**
+- Vitest auf `src/**` eingegrenzt, Playwright-`tests/` ausgeschlossen (`vitest.config.ts`)
+- Keine neuen Pakete
+
+**Qualität:** `tsc` sauber · Lint 0 Errors · Build grün (11 Routen, `/form-demo`) · `npm test` **38/38** (7 Dateien) · Demo rendert ohne Runtime-Fehler.
+
+**Für QA (PROJ-3):** E2E gegen `/form-demo` — Sichtbarkeit, Validierung/Fehlerzähler, verschachtelte Wiederholgruppen, Tabellen, berechnetes Feld, Custom-Validator, Reset, Absenden; finales JSON-Schema bleibt wie gebaut.
 
 ## QA Test Results
 _To be added by /qa_
