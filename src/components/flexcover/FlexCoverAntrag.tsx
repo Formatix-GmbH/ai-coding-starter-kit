@@ -274,45 +274,59 @@ function FlexCoverForm({
             Füllen Sie den Antrag Abschnitt für Abschnitt aus. Ihre Eingaben werden
             automatisch {mode === "local" ? "im Browser" : "in Ihrem Konto"} gesichert.
           </p>
+          {/* Dezente, klickbare Statuszeile (= „jetzt speichern"). */}
+          <button
+            type="button"
+            onClick={save}
+            disabled={status === "saving"}
+            title="Klicken, um sofort zu speichern"
+            aria-live="polite"
+            className={`mt-1.5 inline-flex items-center gap-1.5 text-xs hover:underline disabled:no-underline ${
+              status === "error" || status === "sessionExpired" || status === "stale"
+                ? "text-destructive"
+                : "text-muted-foreground"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                status === "saving"
+                  ? "animate-pulse bg-muted-foreground"
+                  : status === "error" || status === "sessionExpired" || status === "stale"
+                    ? "bg-destructive"
+                    : "bg-muted-foreground/50"
+              }`}
+            />
+            {statusText}
+          </button>
         </div>
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/">Zurück</Link>
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
-        <span
-          className={`text-sm ${status === "error" || status === "sessionExpired" || status === "stale" ? "text-destructive" : "text-muted-foreground"}`}
-          aria-live="polite"
-        >
-          {statusText}
-        </span>
-        <div className="ml-auto flex gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={save} disabled={status === "saving"}>
-            Jetzt speichern
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button type="button" variant="ghost" size="sm">
-                Verwerfen
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Entwurf verwerfen?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Der gespeicherte Entwurf wird gelöscht und das Formular geleert.
-                  Dieser Schritt kann nicht rückgängig gemacht werden.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={() => void handleDiscard()}>
+        <div className="flex items-center gap-1">
+          {(lastSavedAt || resolved.loadedAt) && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" className="text-muted-foreground">
                   Verwerfen
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Entwurf verwerfen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Der gespeicherte Entwurf wird gelöscht und das Formular geleert.
+                    Dieser Schritt kann nicht rückgängig gemacht werden.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => void handleDiscard()}>
+                    Verwerfen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/">Zurück</Link>
+          </Button>
         </div>
       </div>
 
