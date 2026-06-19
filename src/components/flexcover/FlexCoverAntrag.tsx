@@ -324,9 +324,6 @@ function FlexCoverForm({
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/">Zurück</Link>
-          </Button>
         </div>
       </div>
 
