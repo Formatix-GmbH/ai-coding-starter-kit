@@ -218,8 +218,10 @@ Backend (neu)
 
 **Tests:** `src/app/api/drafts/[formId]/route.test.ts` — 14 Integrationstests (401/400/413/409, Insert/Update/force, Lazy-Guard, DELETE). Gesamt 61 Unit-Tests grün, `tsc`/ESLint/`build` ✓.
 
+**Migrationen angewendet (DEV, `flexCover-dev` eu-central-1, 2026-06-19):** Tabelle + 4 RLS-Policies aktiv, `pg_cron`-Job `delete-stale-form-drafts [0 3 * * *]` registriert. Security-Advisors ohne RLS-Findings (einzige WARN: `auth_leaked_password_protection` — bestehende PROJ-2-Auth-Einstellung, fürs Deploy-Hardening vormerken).
+
 **Offen für Folge-Schritte:**
-- Migrationen müssen noch auf **Dev/Prod** angewendet und **pg_cron** aktiviert werden (RLS-Freigabe + Anwenden mit Nutzer).
+- Migrationen noch auf **Prod** anwenden (zusammen mit `/deploy`).
 - Frontend-Anbindung (Auto-Save-Hook, Statusanzeige, Wiederherstellung/Übernahme, Dashboard-Karte, kontrollierter aktiver Tab) → `/frontend PROJ-4`.
 
 ## QA Test Results
