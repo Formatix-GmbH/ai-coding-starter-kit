@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   FormProvider,
   useForm,
@@ -51,6 +51,9 @@ export interface FormEngineProps {
   registry?: HandlerRegistry;
   defaultValues?: FormValues;
   onSubmit?: (values: FormValues) => void;
+  /** Optionaler Kopfbereich (z. B. Titel/Hinweis). Bei Tab-Layout über dem
+   *  Eingabebereich (rechte Spalte) platziert, damit die Navi links allein steht. */
+  header?: ReactNode;
 }
 
 export function FormEngine({
@@ -58,6 +61,7 @@ export function FormEngine({
   registry = emptyRegistry,
   defaultValues = {},
   onSubmit,
+  header,
 }: FormEngineProps) {
   const methods = useForm<FieldValues>({
     defaultValues: defaultValues as FieldValues,
@@ -115,8 +119,10 @@ export function FormEngine({
             <TabsLayout
               sections={visibleSections}
               errorCounts={errorCountBySection}
+              header={header}
             />
           )}
+          {definition.layout !== "tabs" && header && <div className="mb-6">{header}</div>}
           {definition.layout === "single" && (
             <SingleLayout sections={visibleSections} />
           )}
@@ -151,30 +157,47 @@ function SectionBody({ section }: { section: SectionNode }) {
 function TabsLayout({
   sections,
   errorCounts,
+  header,
 }: {
   sections: SectionNode[];
   errorCounts: Record<string, number>;
+  header?: ReactNode;
 }) {
   if (sections.length === 0) return null;
   return (
-    <Tabs defaultValue={sections[0].key} className="w-full">
-      <TabsList className="flex h-auto flex-wrap justify-start">
-        {sections.map((s) => (
-          <TabsTrigger key={s.key} value={s.key} className="gap-2">
-            {s.title}
-            {errorCounts[s.key] > 0 && (
-              <Badge variant="destructive" className="h-5 px-1.5">
-                {errorCounts[s.key]}
-              </Badge>
-            )}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      {sections.map((s) => (
-        <TabsContent key={s.key} value={s.key} className="pt-4">
-          <SectionBody section={s} />
-        </TabsContent>
-      ))}
+    <Tabs defaultValue={sections[0].key} orientation="vertical" className="w-full">
+      {/* Überschrift: nur über dem Eingabebereich (um die Navi-Breite eingerückt),
+          damit die Navi links eigenständig bleibt und mit den Feldern fluchtet. */}
+      {header && <div className="mb-6 md:pl-[16.5rem]">{header}</div>}
+
+      <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+        {/* Abschnitts-Navigation: links (Desktop) bzw. oben scrollbar (Mobil).
+            md:self-start + md:sticky → bleibt beim Scrollen/Wechseln fest an Ort. */}
+        <TabsList className="h-auto w-full shrink-0 flex-row gap-1 overflow-x-auto bg-transparent p-0 md:sticky md:top-6 md:w-60 md:flex-col md:self-start">
+          {sections.map((s, i) => (
+            <TabsTrigger
+              key={s.key}
+              value={s.key}
+              className="w-full shrink-0 justify-start gap-2 rounded-md px-3 py-2 text-left md:shrink data-[state=active]:bg-muted data-[state=active]:font-semibold data-[state=active]:shadow-none"
+            >
+              <span className="text-xs text-muted-foreground">{i + 1}.</span>
+              <span className="flex-1 truncate">{s.title}</span>
+              {errorCounts[s.key] > 0 && (
+                <Badge variant="destructive" className="h-5 px-1.5">
+                  {errorCounts[s.key]}
+                </Badge>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <div className="min-w-0 flex-1">
+          {sections.map((s) => (
+            <TabsContent key={s.key} value={s.key} className="mt-0">
+              <SectionBody section={s} />
+            </TabsContent>
+          ))}
+        </div>
+      </div>
     </Tabs>
   );
 }

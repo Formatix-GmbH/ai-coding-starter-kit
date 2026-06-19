@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { logoutAction } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -51,9 +52,11 @@ export default async function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button disabled>Neuen Antrag starten</Button>
+          <Button asChild>
+            <Link href="/antrag/flexcover">Neuen Antrag starten</Link>
+          </Button>
           <p className="mt-2 text-xs text-muted-foreground">
-            Verfügbar, sobald das Antragsformular (PROJ-3) gebaut ist.
+            Das Speichern von Entwürfen folgt mit PROJ-4.
           </p>
         </CardContent>
       </Card>

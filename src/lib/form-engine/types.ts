@@ -34,6 +34,7 @@ export interface FormValues {
  *  (z.B. "unternehmen.verlagerung"). */
 export type Condition =
   | { field: string; op: "eq" | "neq"; value: string | number | boolean }
+  | { field: string; op: "gt" | "gte" | "lt" | "lte"; value: number }
   | { field: string; op: "in"; value: (string | number | boolean)[] }
   | { field: string; op: "truthy" | "falsy" }
   | { all: Condition[] }

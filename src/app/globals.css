@@ -79,6 +79,11 @@
   * {
     @apply border-border;
   }
+  /* Scrollbar-Platz dauerhaft reservieren, damit die Layoutbreite beim Wechsel
+     zwischen kurzen und langen Abschnitten konstant bleibt (kein seitliches Zucken). */
+  html {
+    scrollbar-gutter: stable;
+  }
   body {
     @apply bg-background text-foreground;
   }

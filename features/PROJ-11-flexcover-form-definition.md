@@ -1,8 +1,8 @@
 # PROJ-11: FlexCover Formulardefinition
 
-## Status: Architected
+## Status: In Progress
 **Created:** 2026-06-18
-**Last Updated:** 2026-06-18
+**Last Updated:** 2026-06-19
 
 ## Dependencies
 - **Requires:** PROJ-3 (Dynamic Form Engine)
@@ -69,6 +69,8 @@
 - [ ] Vollständige Label-Liste aus den XDP-`<caption>` beim Build extrahieren (Detailarbeit)
 - [ ] Wenige XFA-Spezialvalidierungen prüfen, ob deklarativ abbildbar oder Custom-Handler nötig (Erwartung: fast alles deklarativ)
 - [ ] Optional: Bestätigungsdialog beim Entfernen einer Wiederhol-Instanz (XFA hat ihn) — MVP ja/nein?
+- [ ] Kalenderjahr-Eingabe je 3-Jahres-Tabelle (XSD `jahr1/2/3`): aktuell als generische Spaltenüberschriften „1./2./3. Geschäftsjahr". Soll der Nutzer das konkrete Jahr (z. B. 2024) eingeben? (Engine-Tabelle hat statische Spaltenlabels → ggf. Jahr-Felder über der Tabelle ergänzen.)
+- [ ] Zeilenbeschriftungen der Tabellen Azubis/Wertschoepfung fachlich bestätigen (vorläufig Bereichszeilen übernommen).
 - [x] Route-Name: `/antrag/flexcover` (zukunftssicher für Multi-Form) — geklärt
 
 ## Decision Log
@@ -142,6 +144,35 @@ Vorerst Bestätigung; PDF-Download (PROJ-5) dockt am Submit-Event an.
 
 ### F) Abhängigkeiten
 Keine neuen Pakete.
+
+## Implementation Notes (Frontend, 2026-06-19)
+
+**Engine-Erweiterung (PROJ-3, Voraussetzung):** `Condition` um Operatoren `gt/gte/lt/lte` ergänzt (`types.ts`, `conditions.ts`) inkl. deutscher Zahlen-Parsing-Logik (leere/ungültige Werte → Vergleich false). 5 neue Unit-Tests in `conditions.test.ts` (gesamt grün).
+
+**Definition:** `src/lib/forms/flexcover/definition.ts` — typisiertes `FormDefinition`-Modul, alle 9 Abschnitte als Tabs. Namen/Hierarchie aus XSD, Feldtypen/Labels aus XDP (`<caption>`, `<picture>`, `<ui>`, exclGroups). DRY-Helfer für Ja/Nein-Felder, bedingte Beschreibungsfelder und 3-Jahres-Tabellen.
+
+**Keine Custom-Handler nötig:** Sämtliche Logik (Sichtbarkeit, bedingte Pflicht, Zahlenvergleich) ist deklarativ abbildbar — `handlers.ts` wurde bewusst **nicht** angelegt. Das belegt die Tragfähigkeit der Engine als Grundgerüst. (XDP hatte 0 erzwungene Berechnungen, alle Sichtbarkeits-Skripte → `visibleWhen`.)
+
+**Sichtbarkeits-/Pflichtlogik (aus XDP-Skripten abgeleitet):**
+- Flag=Ja → zugehöriges Beschreibungsfeld sichtbar **und** Pflicht: `geaenderteEigentuemersruktur`, `strukturschwach`, `regionaleBedeutung`, `steuerpflichtDE`(*), `verlagerung`, `kooperationDE`, `kooperationBildung`, `veraenderungenBeschaeftigte`.
+- `anzahlStandorteAusland > 0` (neuer `gt`-Operator) → `StandorteNeu` + `Begruendung` sichtbar + Pflicht.
+- `weitereBeguenstigte=Ja` → Wiederholgruppe `Beguenstigter` (Firmierung/Sitz/Personen-Nr. pflicht).
+
+**Route:** `src/app/antrag/flexcover/page.tsx` (anonym; nur `/dashboard` ist in der Middleware geschützt). Submit ruft `pruneHiddenValues` (Variante A) → XSD-konform strukturierte Ausgabe in der Konsole; Toast als Bestätigung. PDF/Download dockt am Submit an (PROJ-5). „Antrag starten" auf Landing + Dashboard verlinkt jetzt hierher (vorher disabled).
+
+**Dokumentierte Abweichungen vom XSD (bewusst):**
+1. **3-Jahres-Tabellen-Zellnotation:** XSD notiert Zellen flach (`Z1SP1`, `maDE1`). Die Engine-Tabelle liefert die semantisch identische Verschachtelung `{zeile:{spalte}}` unter dem korrekten Container-Namen (z. B. `Tabelle_DE`, `Invest`). Die flache Notation ist eine 1:1-mechanische Umformung, die beim späteren **XML-Export** (eigenes Feature) erzeugt wird. Container-Namen + Jahresspalten bleiben XSD-konform.
+2. **Eigene Jahres-Label-Felder** (XSD `jahr1/2/3` als Kalenderjahr „20__"): im MVP als Spaltenüberschriften „1./2./3. Geschäftsjahr" abgebildet, nicht als separate Eingabe → siehe Open Questions.
+3. **`StandorteNeu`/`Begruendung`** sind echte XDP-Felder, aber nicht in der XSD. Sie sind in der AC ausdrücklich gefordert und erscheinen daher in der Ausgabe unter `SitzUndBedeutung` (kleine, bewusste Erweiterung).
+4. **`weitereAnmerkungen`** (6× im XDP, nie in XSD) wurde weggelassen — XSD ist autoritativ für die Ausgabe.
+5. **Boolesche XSD-Felder** werden als `yesno_optional` ("Ja"/"Nein") erfasst statt `true/false`; Mapping auf `xs:boolean` erfolgt beim XML-Export.
+
+**Verifikation:** `tsc --noEmit` ✓, ESLint ✓, `vitest run src/lib/form-engine` 27/27 ✓, `npm run build` ✓ (`/antrag/flexcover` als statische Route generiert).
+
+### Offene Punkte aus dem Build (für /qa)
+- Zeilenbeschriftungen der Tabellen **Azubis** und **Wertschoepfung** sind im XDP nicht eindeutig benannt — vorläufig die 4 Bereichszeilen (F&E/Engineering/Produktion/Sonstige) übernommen. Fachlich gegenprüfen.
+- „Gesamtzahl Beschäftigte über alle Bereiche" (Summenzeile im XFA) ist nicht persistiert (XSD kennt nur Z1–Z4) — bewusst weggelassen.
+- Labels einiger optionaler Felder (`investBeispiele*`, `investAusblick`, `ausblickAusbildung`, `wertschoepfungBerechnung`) hatten im XDP keine `<caption>` — sinnvolle deutsche Labels aus XSD-Namen ergänzt.
 
 ## QA Test Results
 _To be added by /qa_

@@ -26,15 +26,15 @@ export default function Home() {
           zwischenspeichern oder dir das PDF per E-Mail schicken lassen möchtest.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button size="lg" disabled>
-            Antrag starten
+          <Button asChild size="lg">
+            <Link href="/antrag/flexcover">Antrag starten</Link>
           </Button>
           <Button asChild size="lg" variant="outline">
             <Link href="/registrieren">Konto erstellen</Link>
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          {'„Antrag starten" wird mit dem Antragsformular (PROJ-3) aktiviert.'}
+          Kostenlos und ohne Anmeldung — Ihre Eingaben bleiben im Browser.
         </p>
       </main>
 
