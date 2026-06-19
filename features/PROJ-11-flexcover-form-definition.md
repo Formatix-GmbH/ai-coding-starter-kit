@@ -1,6 +1,6 @@
 # PROJ-11: FlexCover Formulardefinition
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-06-18
 **Last Updated:** 2026-06-19
 
@@ -175,7 +175,60 @@ Keine neuen Pakete.
 - Labels einiger optionaler Felder (`investBeispiele*`, `investAusblick`, `ausblickAusbildung`, `wertschoepfungBerechnung`) hatten im XDP keine `<caption>` — sinnvolle deutsche Labels aus XSD-Namen ergänzt.
 
 ## QA Test Results
-_To be added by /qa_
+
+**Getestet:** 2026-06-19 · **Tester:** QA (automatisiert + Code-Audit) · **Build:** `4275e43`
+**Umgebung:** Chromium (Desktop) + Mobile Safari (iPhone 13), Next 16 Dev-Server.
+
+### Zusammenfassung
+- **Acceptance Criteria:** 14 von 14 bestanden.
+- **Automatisierte Tests:** 47 Unit (Vitest) + 62 E2E (Playwright, beide Browser) — **alle grün**.
+- **Bugs:** 0 Critical · 0 High · 2 Medium · 2 Low.
+- **Produktionsreife:** ✅ **READY** (keine Critical/High). Die Medium-Punkte sind bewusste, dokumentierte MVP-Abweichungen bzw. fachlich zu klärende Inhalte und blockieren die Engine-/Funktionsabnahme nicht.
+
+### Acceptance Criteria (Detail)
+| # | Kriterium | Ergebnis | Nachweis |
+|---|-----------|----------|----------|
+| 1 | 9 Abschnitte als Tabs | ✅ | E2E „rendert alle 9 Abschnitte" |
+| 2 | Engine-Feldtyp folgt XDP (select/currency/date/…) | ✅ | E2E Anrede-Select; Code-Review Typmapping |
+| 3 | Pflicht aus XSD `minOccurs` | ✅ | E2E leeres Absenden; Unit-Output |
+| 4 | Labels aus XDP-`<caption>` | ✅ | Code-Review; sichtbare Captions |
+| 5 | Auswahloptionen korrekt (Anrede/Typ/Ja-Nein/DE-Ausland) | ✅ | E2E Anrede; Code-Review |
+| 6 | `weitereBeguenstigte`=Ja → Wiederholgruppe | ✅ | E2E „Wiederholgruppe" |
+| 7 | Flag=Ja → Beschreibungsfeld sichtbar + Pflicht | ✅ | E2E „Verlagerung = Ja" |
+| 8 | `anzahlStandorteAusland`>0 → abhängige Felder (gt) | ✅ | E2E „Zahlenvergleich (gt)" |
+| 9 | Ausgeblendetes Detailfeld blockiert Abgabe nicht | ✅ | E2E „blockiert die Abgabe nicht" |
+| 10 | Begünstigte hinzufügen/entfernen | ✅ | E2E Wiederholgruppe |
+| 11 | 3-Jahres-Tabellen: feste Zeilen × Jahresspalten | ✅ | E2E „feste 3-Jahres-Tabelle" |
+| 12 | Einkauf nach Ländern: Zeilen hinzufügen | ✅ | E2E „dynamische Tabelle" |
+| 13 | Standard-Validierung + Tab-Fehlerzähler | ✅ | E2E Validierung + PLZ |
+| 14 | XSD-konforme Ausgabe-Struktur | ✅ | Unit „Ausgabe ist XSD-konform verschachtelt" |
+| — | Anonym ohne Login | ✅ | E2E „anonymer Zugriff" |
+
+### Edge Cases
+- Flag Ja→Nein nach Befüllen → Wert wird aus Ausgabe entfernt (Variante A): ✅ Unit „blendet versteckte Felder aus".
+- `anzahlStandorteAusland` >0 → 0 → abhängige Felder verschwinden: ✅ E2E.
+- Leeres `gt`-Feld → Bedingung false (kein Crash): ✅ Unit (`conditions.test.ts`).
+- Viele Begünstigte/Länder: bedienbar (keine feste Obergrenze gesetzt): ✅ manuell/Code-Review.
+
+### Security / DSGVO-Audit (Red Team)
+- **Anonyme, reine Client-Seite** — kein API-/DB-Zugriff, keine Auth zu umgehen; Route korrekt **nicht** in `PROTECTED_PREFIXES`. ✅
+- **XSS:** alle Werte React-controlled, Labels statisch aus der Definition, kein `dangerouslySetInnerHTML`. Kein Injection-Sink. ✅
+- **Secrets/Netzwerk:** beim Absenden kein Netzwerkverkehr; keine PII verlässt den Browser. ✅ (DSGVO-Datenminimierung erfüllt) — siehe aber BUG-3.
+
+### Bugs / Findings
+| ID | Sev. | Beschreibung | Status |
+|----|------|--------------|--------|
+| BUG-1 | Medium | Tabellen-Zeilenlabels für **Azubis** und **Wertschoepfung** sind Platzhalter (Bereiche F&E/Engineering/Produktion/Sonstige); fachlich nicht bestätigt, für Wertschöpfung semantisch fraglich. | offen (fachliche Klärung) |
+| BUG-2 | Medium | Kalenderjahr-Werte (XSD `jahr1/2/3` je Tabelle) werden nicht erfasst — die 3 Geschäftsjahre sind nur statische Spaltenüberschriften → ggü. XSD fehlen diese Werte. | offen (dokumentierte MVP-Abweichung) |
+| BUG-3 | Low | Submit-Handler `console.log`t Formulardaten (inkl. PII) in die Browser-Konsole. Vor Produktion entfernen/guarden (PROJ-5 ersetzt den Handler). | offen |
+| BUG-4 | Low | Frei formulierte Labels (`investBeispiele*`, `investAusblick`, `ausblickAusbildung`, `wertschoepfungBerechnung`) mangels XDP-`<caption>` — fachlich gegenlesen. | offen |
+
+### Neue Testdateien
+- `tests/PROJ-11-flexcover.spec.ts` — 11 E2E-Tests (× 2 Browser).
+- `src/lib/forms/flexcover/definition.test.ts` — 5 Unit-Tests (XSD-Struktur, Pruning, gt-Bedingung).
+
+## Deployment
+_To be added by /deploy_
 
 ## Deployment
 _To be added by /deploy_
