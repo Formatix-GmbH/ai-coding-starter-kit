@@ -1,6 +1,6 @@
 # PROJ-4: Formular-Entwurf & Auto-Save
 
-## Status: Architected
+## Status: In Review
 **Created:** 2026-06-19
 **Last Updated:** 2026-06-19
 
@@ -242,7 +242,51 @@ Backend (neu)
 **Hinweis:** E2E-Tests speziell für die Auto-Save-/Entwurf-Flows schreibt `/qa PROJ-4` (inkl. eingeloggter Pfade).
 
 ## QA Test Results
-_To be added by /qa_
+
+**Getestet:** 2026-06-19 · **Tester:** QA (automatisiert + Code-/Security-Audit) · **Build:** `4d7cd15`
+**Umgebung:** Chromium + Mobile Safari, Next 16 Dev-Server, Supabase DEV.
+
+### Zusammenfassung
+- **Acceptance Criteria:** alle erfüllt (anonym per E2E; eingeloggt per API-Integrationstests + Hook-Unit-Tests; Restklasse per Code-Review).
+- **Automatisierte Tests:** 82 Unit/Integration (Vitest) + 70 E2E (Playwright, beide Browser) — **alle grün**. Neu: `expiry.test.ts` (3), `client.test.ts` (12), `useDraftAutosave.test.ts` (7), `tests/PROJ-4-draft-autosave.spec.ts` (3×2).
+- **Bugs:** 0 Critical · 0 High · **1 Medium · 2 Low**.
+- **Produktionsreife:** ✅ **READY** (keine Critical/High).
+
+### Acceptance Criteria (Detail)
+| Bereich | Ergebnis | Nachweis |
+|---------|----------|----------|
+| Anonym: Auto-Save lokal + Wiederherstellung nach Reload | ✅ | E2E „lokal gesichert/wiederhergestellt" |
+| Anonym: „Verwerfen" leert + löscht lokal | ✅ | E2E „Verwerfen" |
+| Eingeloggt: Auto-Save Server (debounced, gedrosselt) | ✅ | Hook-Unit „speichert über die API"; API-Integrationstests |
+| Statusanzeige (speichert/gespeichert/Fehler) | ✅ | E2E + Hook-Unit; Status-Mapping |
+| „Jetzt speichern" (klickbare Statuszeile) | ✅ | E2E „Statuszeile anklickbar"; Hook-Unit „manuelles Speichern" |
+| Verlustfrei inkl. ausgeblendeter Felder; keine Validierung beim Speichern | ✅ | Speichert gesamten RHF-State; Code-Review |
+| Fortsetzen: Auto-Laden + aktiver Abschnitt | ✅ | E2E Restore; Server-Preload (page.tsx) |
+| Übernahme anonym→Konto (auto / Konfliktdialog) | ✅ | Code-Review `FlexCoverAntrag` + `saveServerDraft(force)` |
+| Konflikt: last-write-wins + „neuer Stand"-Hinweis | ✅ | API 409-Integrationstest + Hook-Unit „stale"; Alert-UI |
+| Fehler: Netzwerk/Session → lokal erhalten + Hinweis/Retry | ✅ | Hook-Unit (error/sessionExpired); localStorage-Fallback |
+| Lebensdauer: Verwerfen + 14-Tage-Löschung | ✅ | `expiry.test.ts`; pg_cron (DEV) + Lazy-Guard in API |
+| Dashboard „Meine Anträge" (Weiter/Verwerfen) | ✅ | Server-Load + `DraftListItem`; Code-Review |
+
+### Security / DSGVO-Audit (Red Team)
+- **Autorisierung:** Entwurf-API owner-only (Auth + RLS, `user_id` aus Session, `form_id`-Scope). Unauth → 401 (Integrationstest). Kein Zugriff auf fremde Entwürfe. ✅
+- **Injection:** `data` als JSONB (parametrisiert, kein SQL-Injection); Werte werden als kontrollierte Inputs gerendert (kein XSS-Sink); `active_section` mit Fallback gegen ungültige Werte. ✅
+- **Eingabegrenzen:** Zod-Validierung, 1-MB-Größenlimit (413). ✅
+- **Anonyme Daten verlassen den Browser nicht** (Modus „local" ruft keine API). DSGVO-Datenminimierung. ✅ — siehe aber BUG-1.
+
+### Bugs / Findings
+| ID | Sev. | Beschreibung | Empfehlung |
+|----|------|--------------|------------|
+| BUG-1 | Medium | localStorage-Schlüssel ist **nicht nutzerspezifisch** (`flexcover-draft:<formId>`) und der Logout leert localStorage nicht. Auf einem **gemeinsam genutzten Browser** kann nach dem Abmelden eine anonyme Sitzung den lokal gespiegelten (Sicherheitsnetz-)Stand eines zuvor eingeloggten Nutzers lesen (PII). | Schlüssel der eingeloggten Spiegelung um die User-ID erweitern **und** lokale Entwürfe beim Logout löschen. |
+| BUG-2 | Low | `fetchServerDraft` in `src/lib/drafts/client.ts` ist toter Code (ungenutzter Export; Laden erfolgt serverseitig, „Neu laden" via Reload). | Entfernen. |
+| BUG-3 | Low | Keine Rate-Limitierung auf der Entwurf-API (konsistent mit übrigem MVP; owner-only + 1-MB-Limit mindern das Risiko). | Fürs Deploy-Hardening vormerken. |
+
+### Neue Testdateien
+- `src/lib/drafts/expiry.test.ts`, `src/lib/drafts/client.test.ts`, `src/hooks/useDraftAutosave.test.ts`
+- `tests/PROJ-4-draft-autosave.spec.ts`
+
+## Deployment
+_To be added by /deploy_
 
 ## Deployment
 _To be added by /deploy_
