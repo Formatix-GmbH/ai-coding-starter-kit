@@ -3,6 +3,7 @@ import {
   readLocalDraft,
   writeLocalDraft,
   clearLocalDraft,
+  clearAllLocalDrafts,
   saveServerDraft,
   deleteServerDraft,
 } from "./client";
@@ -44,6 +45,25 @@ describe("localStorage-Helfer", () => {
     writeLocalDraft(FORM, { a: 1 }, null);
     clearLocalDraft(FORM);
     expect(readLocalDraft(FORM)).toBeNull();
+  });
+
+  it("nutzerspezifischer Schlüssel ist für anonyme Sitzung unsichtbar (BUG-1)", () => {
+    // Eingeloggter Spiegel unter User-Schlüssel
+    writeLocalDraft(FORM, { secret: 1 }, null, "user-1");
+    // Anonyme Sitzung (kein userId) darf diesen Stand nicht sehen
+    expect(readLocalDraft(FORM)).toBeNull();
+    // Derselbe Nutzer liest seinen Stand
+    expect(readLocalDraft(FORM, "user-1")?.data).toEqual({ secret: 1 });
+    // Anderer Nutzer sieht ihn ebenfalls nicht
+    expect(readLocalDraft(FORM, "user-2")).toBeNull();
+  });
+
+  it("clearAllLocalDrafts entfernt anonyme und nutzerspezifische Entwürfe", () => {
+    writeLocalDraft(FORM, { a: 1 }, null);
+    writeLocalDraft(FORM, { b: 2 }, null, "user-1");
+    clearAllLocalDrafts();
+    expect(readLocalDraft(FORM)).toBeNull();
+    expect(readLocalDraft(FORM, "user-1")).toBeNull();
   });
 });
 

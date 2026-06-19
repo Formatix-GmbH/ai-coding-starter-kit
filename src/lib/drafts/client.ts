@@ -12,19 +12,26 @@ export interface LocalDraft {
   updatedAt: string;
 }
 
-function localKey(formId: string): string {
-  return `flexcover-draft:${formId}`;
+const KEY_PREFIX = "flexcover-draft:";
+
+/** localStorage-Schlüssel. Eingeloggte (Sicherheitsnetz-)Stände werden um die
+ *  User-ID erweitert, damit eine spätere anonyme Sitzung auf demselben Browser
+ *  niemals den Stand eines anderen Nutzers lesen kann (DSGVO). Anonyme Entwürfe
+ *  nutzen den nutzerlosen Schlüssel. */
+function localKey(formId: string, userId?: string | null): string {
+  return userId ? `${KEY_PREFIX}${formId}:u:${userId}` : `${KEY_PREFIX}${formId}`;
 }
 
 /** Liest den lokalen Entwurf; abgelaufene werden verworfen. SSR-sicher. */
-export function readLocalDraft(formId: string): LocalDraft | null {
+export function readLocalDraft(formId: string, userId?: string | null): LocalDraft | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(localKey(formId));
+    const key = localKey(formId, userId);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as LocalDraft;
     if (!parsed?.updatedAt || isDraftExpired(parsed.updatedAt)) {
-      window.localStorage.removeItem(localKey(formId));
+      window.localStorage.removeItem(key);
       return null;
     }
     return parsed;
@@ -38,21 +45,39 @@ export function writeLocalDraft(
   formId: string,
   data: FormValues,
   activeSection: string | null,
+  userId?: string | null,
 ): boolean {
   if (typeof window === "undefined") return false;
   try {
     const payload: LocalDraft = { data, activeSection, updatedAt: new Date().toISOString() };
-    window.localStorage.setItem(localKey(formId), JSON.stringify(payload));
+    window.localStorage.setItem(localKey(formId, userId), JSON.stringify(payload));
     return true;
   } catch {
     return false;
   }
 }
 
-export function clearLocalDraft(formId: string): void {
+export function clearLocalDraft(formId: string, userId?: string | null): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.removeItem(localKey(formId));
+    window.localStorage.removeItem(localKey(formId, userId));
+  } catch {
+    // ignore
+  }
+}
+
+/** Entfernt sämtliche lokal gespeicherten Entwürfe (anonym + nutzerspezifisch).
+ *  Wird beim Abmelden aufgerufen, damit auf gemeinsam genutzten Geräten keine
+ *  Entwurfsdaten zurückbleiben. */
+export function clearAllLocalDrafts(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith(KEY_PREFIX)) keys.push(k);
+    }
+    keys.forEach((k) => window.localStorage.removeItem(k));
   } catch {
     // ignore
   }

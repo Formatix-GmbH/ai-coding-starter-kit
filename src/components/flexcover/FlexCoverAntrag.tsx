@@ -71,9 +71,11 @@ function formatDate(iso: string): string {
 
 export function FlexCoverAntrag({
   isAuthenticated,
+  userId,
   serverDraft,
 }: {
   isAuthenticated: boolean;
+  userId: string | null;
   serverDraft: DraftRow | null;
 }) {
   const [resolved, setResolved] = useState<Resolved | null>(null);
@@ -188,6 +190,7 @@ export function FlexCoverAntrag({
   return (
     <FlexCoverForm
       mode={isAuthenticated ? "server" : "local"}
+      userId={userId}
       resolved={resolved}
     />
   );
@@ -199,9 +202,11 @@ export function FlexCoverAntrag({
 
 function FlexCoverForm({
   mode,
+  userId,
   resolved,
 }: {
   mode: "local" | "server";
+  userId: string | null;
   resolved: Resolved;
 }) {
   const {
@@ -216,6 +221,7 @@ function FlexCoverForm({
   } = useDraftAutosave({
     formId: FORM_ID,
     mode,
+    userId,
     initialUpdatedAt: resolved.updatedAt,
     initialSavedAt: resolved.savedAt,
   });

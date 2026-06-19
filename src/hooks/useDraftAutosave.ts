@@ -28,6 +28,9 @@ export type SaveStatus =
 export interface UseDraftAutosaveOptions {
   formId: string;
   mode: "local" | "server";
+  /** User-ID (eingeloggt) → nutzerspezifischer localStorage-Schlüssel für den
+   *  Sicherheitsnetz-Spiegel. Anonym: weglassen/null. */
+  userId?: string | null;
   /** Bekannte Versionsmarke des geladenen Server-Entwurfs (für Konflikterkennung). */
   initialUpdatedAt?: string | null;
   /** Zeitstempel des geladenen Entwurfs (für die Statusanzeige). */
@@ -43,10 +46,13 @@ interface Snapshot {
 export function useDraftAutosave({
   formId,
   mode,
+  userId = null,
   initialUpdatedAt = null,
   initialSavedAt = null,
   debounceMs = 2000,
 }: UseDraftAutosaveOptions) {
+  // Anonym → nutzerloser Schlüssel; eingeloggt → nutzerspezifischer Schlüssel.
+  const localUserId = mode === "server" ? userId : null;
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialSavedAt);
   const [conflictDraft, setConflictDraft] = useState<DraftRow | null>(null);
@@ -71,10 +77,10 @@ export function useDraftAutosave({
     JSON.stringify({ v: s.values, s: s.section });
 
   const persistLocal = useCallback(() => {
-    const ok = writeLocalDraft(formId, latest.current.values, latest.current.section);
+    const ok = writeLocalDraft(formId, latest.current.values, latest.current.section, localUserId);
     if (!ok) setLocalUnavailable(true);
     return ok;
-  }, [formId]);
+  }, [formId, localUserId]);
 
   const doSave = useCallback(
     async (force = false) => {
@@ -164,13 +170,13 @@ export function useDraftAutosave({
   const discard = useCallback(async () => {
     clearTimer();
     if (mode === "server") await deleteServerDraft(formId);
-    clearLocalDraft(formId);
+    clearLocalDraft(formId, localUserId);
     persistedSnapshot.current = null;
     knownUpdatedAt.current = null;
     setConflictDraft(null);
     setLastSavedAt(null);
     setStatus("idle");
-  }, [formId, mode]);
+  }, [formId, mode, localUserId]);
 
   // Flush bei Verlassen/Verstecken der Seite; lokaler Stand als Sicherheitsnetz.
   useEffect(() => {

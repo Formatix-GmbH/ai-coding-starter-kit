@@ -2,12 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 // Gemockte Client-Schicht (localStorage + API).
+type MockSave = {
+  status: "saved" | "conflict" | "unauthorized" | "error";
+  draft?: { id: string; updated_at: string };
+};
 const client = vi.hoisted(() => ({
   writeLocalDraft: vi.fn<(...a: unknown[]) => boolean>(() => true),
   clearLocalDraft: vi.fn(),
   deleteServerDraft: vi.fn(async () => true),
-  saveServerDraft: vi.fn(async () => ({
-    status: "saved" as const,
+  saveServerDraft: vi.fn<(...a: unknown[]) => Promise<MockSave>>(async () => ({
+    status: "saved",
     draft: { id: "d1", updated_at: "t1" },
   })),
 }));
@@ -90,7 +94,7 @@ describe("useDraftAutosave", () => {
     const { result } = setup("server");
     await act(async () => { await result.current.discard(); });
     expect(client.deleteServerDraft).toHaveBeenCalledWith("flexcover");
-    expect(client.clearLocalDraft).toHaveBeenCalledWith("flexcover");
+    expect(client.clearLocalDraft).toHaveBeenCalledWith("flexcover", null);
     expect(result.current.status).toBe("idle");
   });
 

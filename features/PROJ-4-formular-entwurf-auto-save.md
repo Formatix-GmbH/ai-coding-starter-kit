@@ -1,6 +1,6 @@
 # PROJ-4: Formular-Entwurf & Auto-Save
 
-## Status: In Review
+## Status: Approved
 **Created:** 2026-06-19
 **Last Updated:** 2026-06-19
 
@@ -248,8 +248,8 @@ Backend (neu)
 
 ### Zusammenfassung
 - **Acceptance Criteria:** alle erfüllt (anonym per E2E; eingeloggt per API-Integrationstests + Hook-Unit-Tests; Restklasse per Code-Review).
-- **Automatisierte Tests:** 82 Unit/Integration (Vitest) + 70 E2E (Playwright, beide Browser) — **alle grün**. Neu: `expiry.test.ts` (3), `client.test.ts` (12), `useDraftAutosave.test.ts` (7), `tests/PROJ-4-draft-autosave.spec.ts` (3×2).
-- **Bugs:** 0 Critical · 0 High · **1 Medium · 2 Low**.
+- **Automatisierte Tests (nach Fix):** 84 Unit/Integration (Vitest) + 70 E2E (Playwright, beide Browser) — **alle grün**.
+- **Bugs:** 0 Critical · 0 High · 1 Medium · 2 Low → **BUG-1 behoben**; BUG-2/3 (Low) offen.
 - **Produktionsreife:** ✅ **READY** (keine Critical/High).
 
 ### Acceptance Criteria (Detail)
@@ -277,9 +277,9 @@ Backend (neu)
 ### Bugs / Findings
 | ID | Sev. | Beschreibung | Empfehlung |
 |----|------|--------------|------------|
-| BUG-1 | Medium | localStorage-Schlüssel ist **nicht nutzerspezifisch** (`flexcover-draft:<formId>`) und der Logout leert localStorage nicht. Auf einem **gemeinsam genutzten Browser** kann nach dem Abmelden eine anonyme Sitzung den lokal gespiegelten (Sicherheitsnetz-)Stand eines zuvor eingeloggten Nutzers lesen (PII). | Schlüssel der eingeloggten Spiegelung um die User-ID erweitern **und** lokale Entwürfe beim Logout löschen. |
-| BUG-2 | Low | `fetchServerDraft` in `src/lib/drafts/client.ts` ist toter Code (ungenutzter Export; Laden erfolgt serverseitig, „Neu laden" via Reload). | Entfernen. |
-| BUG-3 | Low | Keine Rate-Limitierung auf der Entwurf-API (konsistent mit übrigem MVP; owner-only + 1-MB-Limit mindern das Risiko). | Fürs Deploy-Hardening vormerken. |
+| BUG-1 | Medium | localStorage-Schlüssel war **nicht nutzerspezifisch** → auf gemeinsam genutztem Browser konnte eine anonyme Sitzung den gespiegelten Stand (PII) eines zuvor eingeloggten Nutzers lesen. | ✅ **behoben**: Schlüssel um User-ID erweitert (`…:u:<userId>`); anonyme Sitzung sieht ihn nicht; `clearAllLocalDrafts` beim Logout. Tests in `client.test.ts`. |
+| BUG-2 | Low | `fetchServerDraft` in `src/lib/drafts/client.ts` ist toter Code (ungenutzter Export; Laden erfolgt serverseitig, „Neu laden" via Reload). | offen — entfernen. |
+| BUG-3 | Low | Keine Rate-Limitierung auf der Entwurf-API (konsistent mit übrigem MVP; owner-only + 1-MB-Limit mindern das Risiko). | offen — fürs Deploy-Hardening. |
 
 ### Neue Testdateien
 - `src/lib/drafts/expiry.test.ts`, `src/lib/drafts/client.test.ts`, `src/hooks/useDraftAutosave.test.ts`

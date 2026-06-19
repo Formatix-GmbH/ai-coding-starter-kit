@@ -6,6 +6,7 @@ import { getDraftRow } from "@/lib/drafts/store";
 import { isDraftExpired } from "@/lib/drafts/expiry";
 import { flexcoverDefinition } from "@/lib/forms/flexcover/definition";
 import { DraftListItem } from "@/components/flexcover/DraftListItem";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,9 +47,7 @@ export default async function DashboardPage() {
           <p className="text-sm text-muted-foreground">Deine Anträge im Überblick</p>
         </div>
         <form action={logoutAction}>
-          <Button type="submit" variant="outline">
-            Abmelden
-          </Button>
+          <LogoutButton />
         </form>
       </div>
 

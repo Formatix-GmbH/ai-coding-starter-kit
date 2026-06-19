@@ -20,5 +20,11 @@ export default async function FlexCoverAntragPage() {
     serverDraft = draft && !isDraftExpired(draft.updated_at) ? draft : null;
   }
 
-  return <FlexCoverAntrag isAuthenticated={Boolean(user)} serverDraft={serverDraft} />;
+  return (
+    <FlexCoverAntrag
+      isAuthenticated={Boolean(user)}
+      userId={user?.id ?? null}
+      serverDraft={serverDraft}
+    />
+  );
 }
