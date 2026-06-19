@@ -1,6 +1,6 @@
 # PROJ-5: PDF-Generierung & Download
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-06-19
 **Last Updated:** 2026-06-19
 
@@ -62,7 +62,7 @@ Das **vollständige Formularbild** ist zwingend: alle per Sichtbarkeitslogik **a
 - **Sehr großer Antrag** (viele Begünstigte/Länder, lange Texte) → korrekte Paginierung, keine abgeschnittenen Inhalte.
 - **Lange Freitexte/Umbrüche** in mehrzeiligen Feldern → Text bricht im PDF sauber um.
 - **Sonderzeichen/Umlaute** (ä/ö/ü/ß, „flex&cover") → korrekt eingebettet (Font mit passender Glyphenabdeckung).
-- **Schrift Myriad Pro nicht frei einbettbar** → freie, sehr ähnliche Ersatzschrift; Layout bleibt stabil.
+- **Arial nicht frei einbettbar** → metrisch-kompatible freie Ersatzschrift (Arimo / Liberation Sans, optisch identisch); Layout bleibt stabil.
 - **Browser blockiert/behandelt Downloads speziell** → Standard-Download-Mechanismus; Dateiname gesetzt.
 - **Flache Vorlage kann in der Build-Umgebung nicht gerendert werden** (kein `pdftoppm`) → Treue wird **manuell/fachlich** abgenommen (siehe Prozess unten), nicht automatisiert pixelverglichen.
 
@@ -80,7 +80,7 @@ Das **vollständige Formularbild** ist zwingend: alle per Sichtbarkeitslogik **a
 
 ## Open Questions
 - [ ] Reicht die mit react-pdf erreichbare Treue für die behördliche Abnahme? (Entscheidung am Prototyp.)
-- [ ] Ist **Myriad Pro** einbettbar/lizenziert, oder Ersatzschrift? (Lizenz prüfen.)
+- [ ] **Arial** lizenziert einbettbar, oder metrisch-kompatibles freies Pendant (Arimo/Liberation Sans)? (Lizenz prüfen.)
 - [ ] Logo-Asset: aus der flachen Vorlage extrahieren oder separate Datei in besserer Auflösung?
 - [ ] Genauer Dateiname/Metadaten (Titel, Autor) — final in `/frontend`.
 - [ ] Eskalations-Schwelle/Datenschutzmodell bei serverseitigem Rendern (Chromium/iText) — Details in `/architecture`, falls eskaliert wird.
@@ -106,13 +106,73 @@ Das **vollständige Formularbild** ist zwingend: alle per Sichtbarkeitslogik **a
 | **Eskalationspfad: react-pdf → Headless-Chromium (server) → iText/pdfXFA (server, kommerziell)** | Steigende Treue gegen Aufwand/Kosten/Serverseitigkeit; nur bei Bedarf | 2026-06-19 |
 | Original-PDF ist **dynamisches XFA** (`/NeedsRendering`, keine nutzbare AcroForm) → kein Direkt-Befüllen/Overlay der Originaldatei | Aus PDF-Analyse bestätigt | 2026-06-19 |
 | Flache statische Vorlage `Antragsformular flex&cover_flat.pdf` (4 Seiten, kein XFA) = optische Referenz + Logo-Quelle (+ späterer Overlay-Hintergrund) | Vom Nutzer bereitgestellt; renderbar/statisch | 2026-06-19 |
-| Schrift: eingebettete Schrift nutzen, sonst freie Ersatzschrift (Myriad Pro ggf. lizenzpflichtig) | Originaltreue vs. Lizenz/Einbettbarkeit | 2026-06-19 |
+| Zielschrift **Arial**; bei Lizenzunsicherheit metrisch-kompatibles freies Pendant (Arimo/Liberation Sans) | Arial entspricht den XDP-Captions; freie Pendants sind optisch identisch und einbettbar | 2026-06-19 |
+| **Dediziertes FlexCover-PDF-Layout** hinter generischer Renderer-Grenze (kein generisches Auto-Layout) | Echte Originaltreue ist je Amtsformular spezifisch; Grenze bleibt wiederverwendbar | 2026-06-19 |
+| **Eingabe = `pruneHiddenValues`-Ausgabe** (Engine `onSubmit`) | Liefert genau „alle sichtbaren Felder inkl. leer, ohne ausgeblendete" | 2026-06-19 |
+| Clientseitig, keine Persistenz; Blob → Browser-Download | DSGVO-Datenminimierung; MVP endet mit PDF | 2026-06-19 |
+| Neues Paket `@react-pdf/renderer` (+ Schrift-/Logo-Asset) | Clientseitige PDF-Erzeugung mit dynamischem Umbruch | 2026-06-19 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Überblick
+Rein **clientseitige** PDF-Erzeugung beim Abschließen des Formulars — kein Backend, keine Persistenz, keine PII an den Server. Die Erzeugung liegt hinter **einer austauschbaren Grenze** („Daten rein → PDF raus"). Im MVP steckt dahinter ein **react-pdf-Adapter** mit einer **dediziert nachgebauten FlexCover-Vorlage** (originalgetreu zur flachen Referenzseite). Spätere Renderer (Chromium, iText) docken an derselben Grenze an.
+
+### A) Bausteine (Struktur)
+```
+Formularseite /antrag/flexcover (FlexCoverAntrag, schon vorhanden)
+└── Abschluss-Aktion „Antrag absenden / als PDF herunterladen"
+    └── FormEngine validiert (Pflicht + Plausibilität, Fehler je Tab)
+        gültig → onSubmit liefert bereinigte Werte (pruneHiddenValues:
+        alle sichtbaren Felder inkl. leer, ausgeblendete entfernt)
+        │
+        ▼
+   PDF-Grenze (Port)  „generateFlexcoverPdf(werte) → PDF-Bytes"
+   └── MVP-Adapter: react-pdf
+       ├── FlexCover-PDF-Layout (dedizierte Vorlage = amtliches Bild)
+       │   ├── Kopf/Logo, Abschnittsüberschriften (alle 9)
+       │   ├── Feldzeilen (Beschriftung + Wert, leer = leeres Feld)
+       │   ├── feste 3-Jahres-Tabellen (Zeilen × Berichtsjahre)
+       │   ├── dynamische Listen (Begünstigte, Länder) → Umbruch/Folgeseiten
+       │   └── Seitennummern „Seite X von Y"
+       ├── Assets: eingebettete Schrift + Logo (aus flacher Referenz)
+       └── liefert PDF-Bytes
+        │
+        ▼
+   Download im Browser (Dateiname flexcover-antrag-JJJJ-MM-TT.pdf)
+
+Eskalationspfad (gleiche Grenze, anderer Adapter):
+   react-pdf (client)  →  Headless-Chromium (server)  →  iText/pdfXFA (server)
+   – Aufrufer + Datenvertrag bleiben gleich; bei Server-Adaptern ändert sich
+     das Datenschutzmodell (PII verlässt den Browser → gesondert bewerten).
+```
+
+### B) Datenmodell (Klartext)
+- **Keine Datenbank, keine Persistenz.** Eingabe der PDF-Grenze = das **bereinigte Werte-Objekt** der Engine (XSD-konform verschachtelt; alle **sichtbaren** Felder, leere als leer; ausgeblendete entfernt — exakt die `pruneHiddenValues`-Ausgabe, die `onSubmit` bereits liefert).
+- **Beschriftungen/Struktur** des PDF stammen aus der **dedizierten FlexCover-Vorlage** (am amtlichen Bild orientiert), Werte werden per Feldpfad eingesetzt.
+- **Assets** (Logo-Bild, Schrift) sind in der App gebündelt; das Logo wird aus `Antragsformular flex&cover_flat.pdf` gewonnen.
+- Ergebnis ist eine **flüchtige Datei** (Blob) im Browser → Download; danach nichts gespeichert.
+
+### C) Wichtige Tech-Entscheidungen (Begründung)
+- **Clientseitig mit react-pdf:** im Node/Next-Stack, keine Lizenzkosten, dynamischer Umbruch — und **anonyme Daten bleiben lokal** (DSGVO-Datenminimierung).
+- **Generische Renderer-Grenze + dediziertes FlexCover-Layout:** die Grenze ist wiederverwendbar/austauschbar; das Layout ist je amtlichem Formular eigen (echte Originaltreue ist nicht generisch ableitbar). Ein generisches Auto-Layout ist bewusst **nicht** das Ziel.
+- **`pruneHiddenValues` als Eingabe wiederverwenden:** liefert genau „alle sichtbaren Felder inkl. leer, ohne ausgeblendete" — passt 1:1 zum geforderten vollständigen Formularbild.
+- **Schrift eingebettet:** kein Verlass auf System-Fonts; **Arial** als Zielschrift, bei Lizenzunsicherheit metrisch-kompatibles freies Pendant (**Arimo / Liberation Sans**, optisch identisch).
+- **Eskalation ohne Umbau:** nur der Adapter hinter der Grenze wird getauscht; Auslösung, Validierung, Datenaufbereitung, Download-Verdrahtung bleiben.
+
+### D) Auslösung & Fehler
+- Die bestehende Abschluss-Aktion ersetzt den bisherigen Platzhalter-Toast: bei **gültigem** Formular → Grenze aufrufen → Download; bei **ungültigem** → Fehleranzeige (Tabs), kein PDF.
+- **Fehler bei der Erzeugung** → verständliche Meldung, Eingaben bleiben, erneuter Versuch möglich.
+- **Entwurf (PROJ-4)** bleibt unberührt (Löschen erst bei echter Einreichung, PROJ-6).
+
+### E) Abhängigkeiten
+- **Neu:** `@react-pdf/renderer` (clientseitige PDF-Erzeugung). Plus ggf. eine **Schriftdatei** (frei einbettbar) und ein **Logo-Bild** (aus der flachen Referenz extrahiert).
+- Keine Server-/DB-Abhängigkeiten im MVP.
+
+### F) Hinweis zur Treue-Abnahme
+Die flache Referenz lässt sich in der Build-Umgebung nicht automatisch rendern (kein `pdftoppm`) → **menschliche/fachliche Abnahme** am Prototyp (siehe „Treue-Abnahme" oben). Die Entwicklung rendert lokal gegen `Antragsformular flex&cover_flat.pdf`.
 
 ## QA Test Results
 _To be added by /qa_
