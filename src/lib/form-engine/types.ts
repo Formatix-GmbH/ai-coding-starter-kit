@@ -77,6 +77,10 @@ export interface GroupNode {
   label?: string;
   children: FormNode[];
   visibleWhen?: Condition;
+  /** Wenn true, werden die Feld-Kinder in einem responsiven Raster nebeneinander
+   *  dargestellt (z. B. drei Berichtsjahre); Nicht-Feld-Kinder (Tabellen/Gruppen)
+   *  bleiben volle Breite darunter. */
+  inline?: boolean;
 }
 
 export interface RepeatGroupNode {

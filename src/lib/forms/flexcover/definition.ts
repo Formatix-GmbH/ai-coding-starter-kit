@@ -17,7 +17,7 @@
 import type {
   FieldNode,
   FormDefinition,
-  FormNode,
+  GroupNode,
   TableColumn,
   TableRowDef,
 } from "@/lib/form-engine/types";
@@ -47,31 +47,49 @@ function shownWhenYes(
   };
 }
 
-/** Die drei Geschäftsjahres-Spalten einer 3-Jahres-Tabelle. */
-const JAHR_COLS: TableColumn[] = [
-  { key: "jahr1", label: "1. Geschäftsjahr", type: "integer" },
-  { key: "jahr2", label: "2. Geschäftsjahr", type: "integer" },
-  { key: "jahr3", label: "3. Geschäftsjahr", type: "integer" },
-];
-
-function jahrCols(type: TableColumn["type"]): TableColumn[] {
-  return JAHR_COLS.map((c) => ({ ...c, type }));
+/** Ein Berichtsjahr-Eingabefeld (XSD jahr1/jahr2/jahr3). */
+function yearField(key: string, label: string): FieldNode {
+  return { kind: "field", key, label, type: "year", placeholder: "JJJJ" };
 }
 
-/** Feste 3-Jahres-Tabelle (Zeilen × Geschäftsjahre). */
-function yearTable(
+/** Die drei Werte-Spalten der Wertematrix (Spalte = Berichtsjahr 1/2/3). */
+function valueCols(type: TableColumn["type"]): TableColumn[] {
+  return [
+    { key: "sp1", label: "1. Jahr", type },
+    { key: "sp2", label: "2. Jahr", type },
+    { key: "sp3", label: "3. Jahr", type },
+  ];
+}
+
+/**
+ * Container einer 3-Jahres-Tabelle (XSD-konform): drei Berichtsjahre (jahr1/2/3)
+ * als direkte Kinder + eine feste Wertematrix (Zeilen × 3 Jahresspalten) unter
+ * `werte`. Die Berichtsjahre stehen nebeneinander (inline).
+ */
+function yearTableGroup(
   key: string,
   label: string,
   rows: TableRowDef[],
   colType: TableColumn["type"],
-): FormNode {
+): GroupNode {
   return {
-    kind: "table",
+    kind: "group",
     key,
     label,
-    mode: "fixed",
-    columns: jahrCols(colType),
-    rows,
+    inline: true,
+    children: [
+      yearField("jahr1", "Berichtsjahr 1"),
+      yearField("jahr2", "Berichtsjahr 2"),
+      yearField("jahr3", "Berichtsjahr 3"),
+      {
+        kind: "table",
+        key: "werte",
+        label: "",
+        mode: "fixed",
+        columns: valueCols(colType),
+        rows,
+      },
+    ],
   };
 }
 
@@ -81,12 +99,22 @@ const DE_AUS_ROWS: TableRowDef[] = [
   { key: "AUS", label: "Ausland" },
 ];
 
-/** Zeilen der Bereichs-Tabellen (Beschäftigte, Ausbildung, Wertschöpfung). */
+/** Zeilen der Bereichs-Tabellen (Beschäftigte in DE/Ausland). */
 const BEREICH_ROWS: TableRowDef[] = [
   { key: "fe", label: "Forschungs- und Entwicklungsaktivitäten (F&E)" },
   { key: "engineering", label: "Engineering/Planung" },
   { key: "produktion", label: "Produktion" },
   { key: "sonstige", label: "Sonstige" },
+];
+
+/** Ausbildung: eine Zeile (Originalformular hat nur eine Beschriftung). */
+const AZUBI_ROWS: TableRowDef[] = [
+  { key: "azubis", label: "Auszubildende / Dualstudierende" },
+];
+
+/** Wertschöpfung: eine Zeile (Originalformular hat nur eine Beschriftung). */
+const WERTSCHOEPFUNG_ROWS: TableRowDef[] = [
+  { key: "anteil", label: "Anteil deutscher Wertschöpfung am Umsatz" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -304,13 +332,13 @@ export const flexcoverDefinition: FormDefinition = {
       key: "ForschungEntwicklung",
       title: "Forschung & Entwicklung",
       children: [
-        yearTable(
+        yearTableGroup(
           "Beschaeftigte",
           "Beschäftigte in F&E (Deutschland und Ausland, jeweils für die letzten 3 Geschäftsjahre)",
           DE_AUS_ROWS,
           "integer",
         ),
-        yearTable(
+        yearTableGroup(
           "Aufwendungen",
           "Aufwendungen für F&E (Deutschland und Ausland, jeweils für die letzten 3 Geschäftsjahre)",
           DE_AUS_ROWS,
@@ -346,7 +374,7 @@ export const flexcoverDefinition: FormDefinition = {
       key: "Investitionen",
       title: "Investitionen",
       children: [
-        yearTable(
+        yearTableGroup(
           "Invest",
           "Investitionen in Standorte (Deutschland und Ausland, jeweils für die letzten 3 Geschäftsjahre)",
           DE_AUS_ROWS,
@@ -387,13 +415,13 @@ export const flexcoverDefinition: FormDefinition = {
       key: "Beschaeftigte",
       title: "Beschäftigte",
       children: [
-        yearTable(
+        yearTableGroup(
           "Tabelle_DE",
           "Anzahl Beschäftigte in Deutschland nach Bereichen",
           BEREICH_ROWS,
           "integer",
         ),
-        yearTable(
+        yearTableGroup(
           "Tabelle_AUS",
           "Anzahl Beschäftigte im Ausland nach Bereichen",
           BEREICH_ROWS,
@@ -432,10 +460,10 @@ export const flexcoverDefinition: FormDefinition = {
       key: "Ausbildung",
       title: "Ausbildung",
       children: [
-        yearTable(
+        yearTableGroup(
           "Azubis",
-          "Auszubildende / Dualstudierende nach Bereichen (Anzahl)",
-          BEREICH_ROWS,
+          "Auszubildende / Dualstudierende (Anzahl, je Berichtsjahr)",
+          AZUBI_ROWS,
           "integer",
         ),
         {
@@ -466,22 +494,33 @@ export const flexcoverDefinition: FormDefinition = {
       title: "Sourcing & Wertschöpfung",
       children: [
         {
-          kind: "table",
+          kind: "group",
           key: "Einkauf",
           label: "Einkaufsvolumen nach Ländern (für die letzten 3 Geschäftsjahre)",
-          mode: "dynamic",
-          addLabel: "Land hinzufügen",
-          columns: [
-            { key: "Land", label: "Land", type: "text" },
-            { key: "Betrag1", label: "1. Geschäftsjahr", type: "currency" },
-            { key: "Betrag2", label: "2. Geschäftsjahr", type: "currency" },
-            { key: "Betrag3", label: "3. Geschäftsjahr", type: "currency" },
+          inline: true,
+          children: [
+            yearField("jahr1", "Berichtsjahr 1"),
+            yearField("jahr2", "Berichtsjahr 2"),
+            yearField("jahr3", "Berichtsjahr 3"),
+            {
+              kind: "table",
+              key: "Laender",
+              label: "",
+              mode: "dynamic",
+              addLabel: "Land hinzufügen",
+              columns: [
+                { key: "Land", label: "Land", type: "text" },
+                { key: "Betrag1", label: "1. Jahr", type: "currency" },
+                { key: "Betrag2", label: "2. Jahr", type: "currency" },
+                { key: "Betrag3", label: "3. Jahr", type: "currency" },
+              ],
+            },
           ],
         },
-        yearTable(
+        yearTableGroup(
           "Wertschoepfung",
-          "Anteil deutscher Wertschöpfung am Umsatz (Anteil in %)",
-          BEREICH_ROWS,
+          "Anteil deutscher Wertschöpfung am Umsatz (in %, je Berichtsjahr)",
+          WERTSCHOEPFUNG_ROWS,
           "percent",
         ),
         {

@@ -1,6 +1,6 @@
 # PROJ-11: FlexCover Formulardefinition
 
-## Status: In Review
+## Status: Approved
 **Created:** 2026-06-18
 **Last Updated:** 2026-06-19
 
@@ -69,8 +69,8 @@
 - [ ] Vollständige Label-Liste aus den XDP-`<caption>` beim Build extrahieren (Detailarbeit)
 - [ ] Wenige XFA-Spezialvalidierungen prüfen, ob deklarativ abbildbar oder Custom-Handler nötig (Erwartung: fast alles deklarativ)
 - [ ] Optional: Bestätigungsdialog beim Entfernen einer Wiederhol-Instanz (XFA hat ihn) — MVP ja/nein?
-- [ ] Kalenderjahr-Eingabe je 3-Jahres-Tabelle (XSD `jahr1/2/3`): aktuell als generische Spaltenüberschriften „1./2./3. Geschäftsjahr". Soll der Nutzer das konkrete Jahr (z. B. 2024) eingeben? (Engine-Tabelle hat statische Spaltenlabels → ggf. Jahr-Felder über der Tabelle ergänzen.)
-- [ ] Zeilenbeschriftungen der Tabellen Azubis/Wertschoepfung fachlich bestätigen (vorläufig Bereichszeilen übernommen).
+- [x] Kalenderjahr-Eingabe je 3-Jahres-Tabelle (XSD `jahr1/2/3`) — geklärt (QA BUG-2): drei Berichtsjahr-Felder je Tabelle ergänzt.
+- [x] Zeilenbeschriftungen der Tabellen Azubis/Wertschoepfung — geklärt (QA BUG-1): je 1 Zeile (vom User bestätigt).
 - [x] Route-Name: `/antrag/flexcover` (zukunftssicher für Multi-Form) — geklärt
 
 ## Decision Log
@@ -158,21 +158,23 @@ Keine neuen Pakete.
 - `anzahlStandorteAusland > 0` (neuer `gt`-Operator) → `StandorteNeu` + `Begruendung` sichtbar + Pflicht.
 - `weitereBeguenstigte=Ja` → Wiederholgruppe `Beguenstigter` (Firmierung/Sitz/Personen-Nr. pflicht).
 
-**Route:** `src/app/antrag/flexcover/page.tsx` (anonym; nur `/dashboard` ist in der Middleware geschützt). Submit ruft `pruneHiddenValues` (Variante A) → XSD-konform strukturierte Ausgabe in der Konsole; Toast als Bestätigung. PDF/Download dockt am Submit an (PROJ-5). „Antrag starten" auf Landing + Dashboard verlinkt jetzt hierher (vorher disabled).
+**Route:** `src/app/antrag/flexcover/page.tsx` (anonym; nur `/dashboard` ist in der Middleware geschützt). Die Engine liefert dem `onSubmit` bereits XSD-konform strukturierte, von ausgeblendeten Feldern bereinigte Werte (Variante A); die Seite zeigt nur einen Bestätigungs-Toast (kein Logging → DSGVO). PDF/Download dockt am Submit an (PROJ-5). „Antrag starten" auf Landing + Dashboard verlinkt hierher.
+
+**3-Jahres-Tabellen (nach QA-Fix BUG-2):** Jeder XSD-Container (z. B. `Tabelle_DE`, `Invest`, `Einkauf`) ist eine `group` mit drei Berichtsjahr-Feldern `jahr1/jahr2/jahr3` (XSD-konform, flach) + einer Wertematrix unter `werte` (feste Zeilen × Spalten `sp1/sp2/sp3`). Bei `Einkauf` ist die dynamische Länderliste die XSD-`Laender[]`. Die Berichtsjahre stehen über die neue Engine-Option `GroupNode.inline` nebeneinander.
+
+**Neue Engine-Optionen (PROJ-3):** `GroupNode.inline` (Feld-Kinder im Raster nebeneinander, übrige Kinder volle Breite); `TableView` rendert den Titel nur bei nicht-leerem `label`.
 
 **Dokumentierte Abweichungen vom XSD (bewusst):**
-1. **3-Jahres-Tabellen-Zellnotation:** XSD notiert Zellen flach (`Z1SP1`, `maDE1`). Die Engine-Tabelle liefert die semantisch identische Verschachtelung `{zeile:{spalte}}` unter dem korrekten Container-Namen (z. B. `Tabelle_DE`, `Invest`). Die flache Notation ist eine 1:1-mechanische Umformung, die beim späteren **XML-Export** (eigenes Feature) erzeugt wird. Container-Namen + Jahresspalten bleiben XSD-konform.
-2. **Eigene Jahres-Label-Felder** (XSD `jahr1/2/3` als Kalenderjahr „20__"): im MVP als Spaltenüberschriften „1./2./3. Geschäftsjahr" abgebildet, nicht als separate Eingabe → siehe Open Questions.
-3. **`StandorteNeu`/`Begruendung`** sind echte XDP-Felder, aber nicht in der XSD. Sie sind in der AC ausdrücklich gefordert und erscheinen daher in der Ausgabe unter `SitzUndBedeutung` (kleine, bewusste Erweiterung).
-4. **`weitereAnmerkungen`** (6× im XDP, nie in XSD) wurde weggelassen — XSD ist autoritativ für die Ausgabe.
-5. **Boolesche XSD-Felder** werden als `yesno_optional` ("Ja"/"Nein") erfasst statt `true/false`; Mapping auf `xs:boolean` erfolgt beim XML-Export.
+1. **3-Jahres-Tabellen-Zellnotation:** XSD notiert die Matrixzellen flach (`Z1SP1`, `maDE1`). Die Engine liefert die semantisch identische Verschachtelung `werte.{zeile}.{spalte}` unter dem korrekten Container-Namen. Die flache Notation ist eine 1:1-mechanische Umformung beim späteren **XML-Export** (eigenes Feature). Container-Namen + Berichtsjahre (`jahr1/2/3`) sind XSD-konform.
+2. **`StandorteNeu`/`Begruendung`** sind echte XDP-Felder, aber nicht in der XSD. Sie sind in der AC ausdrücklich gefordert und erscheinen daher in der Ausgabe unter `SitzUndBedeutung` (kleine, bewusste Erweiterung).
+3. **`weitereAnmerkungen`** (6× im XDP, nie in XSD) wurde weggelassen — XSD ist autoritativ für die Ausgabe.
+4. **Boolesche XSD-Felder** werden als `yesno_optional` ("Ja"/"Nein") erfasst statt `true/false`; Mapping auf `xs:boolean` erfolgt beim XML-Export.
 
-**Verifikation:** `tsc --noEmit` ✓, ESLint ✓, `vitest run src/lib/form-engine` 27/27 ✓, `npm run build` ✓ (`/antrag/flexcover` als statische Route generiert).
+**Verifikation (nach Bugfixes):** `tsc --noEmit` ✓, ESLint ✓, `vitest run` 47/47 ✓, `playwright test` 64/64 ✓, `npm run build` ✓.
 
-### Offene Punkte aus dem Build (für /qa)
-- Zeilenbeschriftungen der Tabellen **Azubis** und **Wertschoepfung** sind im XDP nicht eindeutig benannt — vorläufig die 4 Bereichszeilen (F&E/Engineering/Produktion/Sonstige) übernommen. Fachlich gegenprüfen.
+### Offene Punkte aus dem Build
 - „Gesamtzahl Beschäftigte über alle Bereiche" (Summenzeile im XFA) ist nicht persistiert (XSD kennt nur Z1–Z4) — bewusst weggelassen.
-- Labels einiger optionaler Felder (`investBeispiele*`, `investAusblick`, `ausblickAusbildung`, `wertschoepfungBerechnung`) hatten im XDP keine `<caption>` — sinnvolle deutsche Labels aus XSD-Namen ergänzt.
+- BUG-4 (Low, offen): Labels einiger optionaler Felder (`investBeispiele*`, `investAusblick`, `ausblickAusbildung`, `wertschoepfungBerechnung`) hatten im XDP keine `<caption>` — frei formuliert, fachlich gegenlesen.
 
 ## QA Test Results
 
@@ -181,9 +183,9 @@ Keine neuen Pakete.
 
 ### Zusammenfassung
 - **Acceptance Criteria:** 14 von 14 bestanden.
-- **Automatisierte Tests:** 47 Unit (Vitest) + 62 E2E (Playwright, beide Browser) — **alle grün**.
-- **Bugs:** 0 Critical · 0 High · 2 Medium · 2 Low.
-- **Produktionsreife:** ✅ **READY** (keine Critical/High). Die Medium-Punkte sind bewusste, dokumentierte MVP-Abweichungen bzw. fachlich zu klärende Inhalte und blockieren die Engine-/Funktionsabnahme nicht.
+- **Automatisierte Tests (nach Bugfixes):** 47 Unit (Vitest) + 64 E2E (Playwright, beide Browser) — **alle grün**.
+- **Bugs:** 0 Critical · 0 High · 2 Medium · 2 Low → **BUG-1/2/3 behoben** (Folge-`/frontend`), BUG-4 (Low) offen.
+- **Produktionsreife:** ✅ **READY** (keine Critical/High).
 
 ### Acceptance Criteria (Detail)
 | # | Kriterium | Ergebnis | Nachweis |
@@ -218,9 +220,9 @@ Keine neuen Pakete.
 ### Bugs / Findings
 | ID | Sev. | Beschreibung | Status |
 |----|------|--------------|--------|
-| BUG-1 | Medium | Tabellen-Zeilenlabels für **Azubis** und **Wertschoepfung** sind Platzhalter (Bereiche F&E/Engineering/Produktion/Sonstige); fachlich nicht bestätigt, für Wertschöpfung semantisch fraglich. | offen (fachliche Klärung) |
-| BUG-2 | Medium | Kalenderjahr-Werte (XSD `jahr1/2/3` je Tabelle) werden nicht erfasst — die 3 Geschäftsjahre sind nur statische Spaltenüberschriften → ggü. XSD fehlen diese Werte. | offen (dokumentierte MVP-Abweichung) |
-| BUG-3 | Low | Submit-Handler `console.log`t Formulardaten (inkl. PII) in die Browser-Konsole. Vor Produktion entfernen/guarden (PROJ-5 ersetzt den Handler). | offen |
+| BUG-1 | Medium | Tabellen-Zeilenlabels für **Azubis** und **Wertschoepfung** waren Platzhalter (4 Bereiche). XDP-Analyse + User bestätigt: je **1 Zeile**. | ✅ behoben (`AZUBI_ROWS`/`WERTSCHOEPFUNG_ROWS`) |
+| BUG-2 | Medium | Kalenderjahr-Werte (XSD `jahr1/2/3`) wurden nicht erfasst. | ✅ behoben (3 Berichtsjahr-Felder je Tabelle, `GroupNode.inline`) |
+| BUG-3 | Low | Submit-Handler `console.log`te Formulardaten (PII) in die Konsole. | ✅ behoben (Logging entfernt) |
 | BUG-4 | Low | Frei formulierte Labels (`investBeispiele*`, `investAusblick`, `ausblickAusbildung`, `wertschoepfungBerechnung`) mangels XDP-`<caption>` — fachlich gegenlesen. | offen |
 
 ### Neue Testdateien

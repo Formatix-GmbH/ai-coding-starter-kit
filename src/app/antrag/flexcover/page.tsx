@@ -4,17 +4,15 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { FormEngine } from "@/components/form-engine/FormEngine";
 import { flexcoverDefinition } from "@/lib/forms/flexcover/definition";
-import { pruneHiddenValues } from "@/lib/form-engine/output";
 import type { FormValues } from "@/lib/form-engine/types";
 import { Button } from "@/components/ui/button";
 
 export default function FlexCoverAntragPage() {
-  function handleSubmit(values: FormValues) {
-    // Ausgabe ist XSD-konform strukturiert (Element-Namen/Verschachtelung wie
-    // flexcover_antrag_X.xsd). PDF-Erzeugung & Download docken hier an (PROJ-5).
-    const output = pruneHiddenValues(flexcoverDefinition, values);
+  function handleSubmit(_values: FormValues) {
+    // Die Engine liefert hier bereits XSD-konform strukturierte, von ausgeblendeten
+    // Feldern bereinigte Werte. PDF-Erzeugung & Download docken an diesem Submit-
+    // Event an (PROJ-5). Hinweis (DSGVO): bewusst kein Logging der Daten (PII).
     toast.success("Antrag erfasst. Die PDF-Erstellung folgt mit PROJ-5.");
-    console.log("FlexCover-Ausgabe (XSD-konform):", output);
   }
 
   const header = (

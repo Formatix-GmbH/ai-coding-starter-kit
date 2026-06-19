@@ -25,9 +25,14 @@ describe("FlexCover-Definition", () => {
     const empty = buildEmptyValues(flexcoverDefinition);
     expect(Object.keys(empty)).toContain("Ansprechpartner");
     expect((empty.Unternehmen as FormValues).adresse).toBeTypeOf("object");
-    // dynamische Tabelle → leeres Array, feste Tabelle → leeres Objekt
-    expect((empty.SourcingWertschoepfung as FormValues).Einkauf).toEqual([]);
-    expect((empty.Beschaeftigte as FormValues).Tabelle_DE).toEqual({});
+    // 3-Jahres-Container: Gruppe mit Berichtsjahren + fester Wertematrix
+    const tabelleDE = (empty.Beschaeftigte as FormValues).Tabelle_DE as FormValues;
+    expect(tabelleDE.jahr1).toBe("");
+    expect(tabelleDE.werte).toEqual({});
+    // Einkauf: Gruppe mit Berichtsjahren + dynamischer Länderliste
+    const einkauf = (empty.SourcingWertschoepfung as FormValues).Einkauf as FormValues;
+    expect(einkauf.jahr1).toBe("");
+    expect(einkauf.Laender).toEqual([]);
   });
 
   it("Ausgabe ist XSD-konform verschachtelt (Namen/Hierarchie)", () => {
@@ -53,10 +58,15 @@ describe("FlexCover-Definition", () => {
         eignerstruktur: "GmbH",
       },
       Beschaeftigte: {
-        Tabelle_DE: { produktion: { jahr1: "12", jahr2: "13", jahr3: "14" } },
+        Tabelle_DE: {
+          jahr1: "2022",
+          jahr2: "2023",
+          jahr3: "2024",
+          werte: { produktion: { sp1: "12", sp2: "13", sp3: "14" } },
+        },
       },
       SourcingWertschoepfung: {
-        Einkauf: [{ Land: "Italien", Betrag1: "1000" }],
+        Einkauf: { jahr1: "2022", Laender: [{ Land: "Italien", Betrag1: "1000" }] },
       },
     };
 
@@ -70,12 +80,14 @@ describe("FlexCover-Definition", () => {
     expect(
       ((out.Unternehmen as FormValues).Beguenstigter as FormValues[])[0].vollstaendigeFirmierung,
     ).toBe("Tochter GmbH");
-    // feste Tabelle: Container.Zeile.Spalte
-    expect(
-      (((out.Beschaeftigte as FormValues).Tabelle_DE as FormValues).produktion as FormValues).jahr1,
-    ).toBe("12");
-    // dynamische Tabelle als Array
-    expect((out.SourcingWertschoepfung as FormValues).Einkauf).toHaveLength(1);
+    // 3-Jahres-Container: Berichtsjahre flach + Wertematrix unter "werte" (BUG-2)
+    const tabelleDE = (out.Beschaeftigte as FormValues).Tabelle_DE as FormValues;
+    expect(tabelleDE.jahr1).toBe("2022");
+    expect(((tabelleDE.werte as FormValues).produktion as FormValues).sp1).toBe("12");
+    // Einkauf: Berichtsjahre + dynamische Länderliste
+    const einkauf = (out.SourcingWertschoepfung as FormValues).Einkauf as FormValues;
+    expect(einkauf.jahr1).toBe("2022");
+    expect(einkauf.Laender).toHaveLength(1);
   });
 
   it("blendet versteckte Felder aus der Ausgabe aus (Variante A)", () => {

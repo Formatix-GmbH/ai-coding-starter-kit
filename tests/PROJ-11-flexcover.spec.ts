@@ -92,23 +92,32 @@ test("Wiederholgruppe: weitere Begünstigte hinzufügen/entfernen", async ({ pag
   await expect(byId(page, "Unternehmen.Beguenstigter.0.sitzBeguenstigter")).toBeVisible();
 });
 
-test("feste 3-Jahres-Tabelle: beschriftete Zeilen × Geschäftsjahr-Spalten", async ({ page }) => {
+test("feste 3-Jahres-Tabelle: Berichtsjahre + beschriftete Zeilen × Jahresspalten", async ({ page }) => {
   await tab(page, /^.*Beschäftigte$/).click();
-  // Spaltenüberschriften
-  await expect(page.getByText("1. Geschäftsjahr").first()).toBeVisible();
-  // Zeilenbeschriftung + Zelle adressierbar
+  // Berichtsjahr-Felder (BUG-2)
+  await fillStable(byId(page, "Beschaeftigte.Tabelle_DE.jahr1"), "2022");
+  await expect(byId(page, "Beschaeftigte.Tabelle_DE.jahr1")).toHaveValue("2022");
+  // Zeilenbeschriftung + Matrix-Zelle adressierbar
   await expect(page.getByText("Engineering/Planung").first()).toBeVisible();
-  await fillStable(page.locator('[name="Beschaeftigte.Tabelle_DE.produktion.jahr1"]'), "12");
-  await expect(page.locator('[name="Beschaeftigte.Tabelle_DE.produktion.jahr1"]')).toHaveValue("12");
+  await fillStable(page.locator('[name="Beschaeftigte.Tabelle_DE.werte.produktion.sp1"]'), "12");
+  await expect(page.locator('[name="Beschaeftigte.Tabelle_DE.werte.produktion.sp1"]')).toHaveValue("12");
+});
+
+test("Tabellen-Zeilenkorrektur (BUG-1): Azubis und Wertschöpfung je 1 Zeile", async ({ page }) => {
+  await tab(page, /Ausbildung/).click();
+  await expect(page.getByText("Auszubildende / Dualstudierende").first()).toBeVisible();
+  await expect(page.locator('[name="Ausbildung.Azubis.werte.azubis.sp1"]')).toBeVisible();
+  // Keine Bereichszeile mehr (kein Engineering/Planung in der Azubis-Tabelle)
+  await expect(page.locator('[name="Ausbildung.Azubis.werte.engineering.sp1"]')).toHaveCount(0);
 });
 
 test("dynamische Tabelle: Einkauf nach Ländern – Zeile hinzufügen", async ({ page }) => {
   await tab(page, /Sourcing & Wertschöpfung/).click();
   await clickUntil(
     page.getByRole("button", { name: /Land hinzufügen/ }),
-    page.locator('[name="SourcingWertschoepfung.Einkauf.0.Land"]'),
+    page.locator('[name="SourcingWertschoepfung.Einkauf.Laender.0.Land"]'),
   );
-  await expect(page.locator('[name="SourcingWertschoepfung.Einkauf.0.Betrag1"]')).toBeVisible();
+  await expect(page.locator('[name="SourcingWertschoepfung.Einkauf.Laender.0.Betrag1"]')).toBeVisible();
 });
 
 test("Validierung: leeres Absenden zeigt Pflichtfehler + Toast + Tab-Fehlerzähler", async ({ page }) => {

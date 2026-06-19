@@ -33,13 +33,36 @@ export function NodeRenderer({ node, base }: { node: FormNode; base: string }) {
   }
 
   if (node.kind === "group") {
+    const groupBase = joinPath(base, node.key);
+    if (node.inline) {
+      // Feld-Kinder nebeneinander (Raster), übrige Kinder (z. B. Tabellen) darunter.
+      const fieldChildren = node.children.filter((c) => c.kind === "field");
+      const otherChildren = node.children.filter((c) => c.kind !== "field");
+      return (
+        <fieldset className="space-y-4 rounded-md border p-4">
+          {node.label && (
+            <legend className="px-1 text-sm font-medium">{node.label}</legend>
+          )}
+          {fieldChildren.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {fieldChildren.map((child) => (
+                <NodeRenderer key={child.key} node={child} base={groupBase} />
+              ))}
+            </div>
+          )}
+          {otherChildren.map((child) => (
+            <NodeRenderer key={child.key} node={child} base={groupBase} />
+          ))}
+        </fieldset>
+      );
+    }
     return (
       <fieldset className="space-y-4 rounded-md border p-4">
         {node.label && (
           <legend className="px-1 text-sm font-medium">{node.label}</legend>
         )}
         {node.children.map((child) => (
-          <NodeRenderer key={child.key} node={child} base={joinPath(base, node.key)} />
+          <NodeRenderer key={child.key} node={child} base={groupBase} />
         ))}
       </fieldset>
     );
@@ -168,7 +191,7 @@ function TableView({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium">{node.label}</h3>
+      {node.label && <h3 className="text-sm font-medium">{node.label}</h3>}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
