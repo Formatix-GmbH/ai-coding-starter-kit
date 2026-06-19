@@ -1,6 +1,6 @@
 # PROJ-4: Formular-Entwurf & Auto-Save
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-06-19
 **Last Updated:** 2026-06-19
 
@@ -82,10 +82,13 @@ Zweistufige Entwurf-Speicherung, damit **kein Datenverlust** entsteht (PRD-Erfol
 - **Robustheit:** lokales Sicherheitsnetz auch für eingeloggte Nutzer (Server-Ausfall darf nichts verlieren).
 
 ## Open Questions
-- [ ] Konkrete Debounce-/Throttle-Werte (Feinabstimmung in Architektur/Frontend; ~2 s als Richtwert).
+- [ ] Konkrete Debounce-/Throttle-Werte final beim `/frontend` (~2 s als Richtwert).
 - [ ] Soll vor der 14-Tage-Löschung eine Warnung erfolgen (z. B. Hinweis beim Öffnen „läuft in X Tagen ab")? Mail-Warnung eher PROJ-7/später.
-- [ ] Verschlüsselung der Entwurfsdaten at-rest über den Supabase-Standard hinaus? → DSGVO-Bewertung in der Architektur.
-- [ ] Mechanik der automatischen Löschung (DB-TTL/Cron/Edge Function) — Entscheidung in `/architecture`.
+- [ ] Verschlüsselung der Entwurfsdaten at-rest über den Supabase-Standard hinaus? → DSGVO-Bewertung (Standard-Verschlüsselung at-rest ist gegeben; zusätzlich nur bei Bedarf).
+- [x] Mechanik der automatischen Löschung — geklärt: **pg_cron-Job + Lazy-Guard**.
+- [ ] **pg_cron-Extension** in beiden Supabase-Projekten (Dev/Prod) aktivieren — beim `/backend`.
+- [ ] Kleine Engine-Anpassung nötig: aktiver Tab/Abschnitt **kontrolliert** + Callback (damit der aktive Abschnitt gespeichert/wiederhergestellt werden kann).
+- [ ] Obergrenze für die Größe des `data`-JSON (Payload-Limit) zum Schutz vor Missbrauch — beim `/backend` festlegen.
 
 ## Decision Log
 
@@ -107,12 +110,97 @@ Zweistufige Entwurf-Speicherung, damit **kein Datenverlust** entsteht (PRD-Erfol
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| Server-Entwürfe in DB-Tabelle `form_drafts` (JSON-Spalte) statt Storage-Datei | strukturiert, atomar, RLS-absicherbar, pro Nutzer abfragbar | 2026-06-19 |
+| Eindeutigkeit (user_id, form_id) → ein Entwurf pro Nutzer/Formular | erzwingt das Produktziel; Speichern = einfacher Upsert | 2026-06-19 |
+| RLS owner-only nach PROJ-1-Muster; `set_updated_at`-Trigger wiederverwenden | Sicherheit „by default", Konsistenz | 2026-06-19 |
+| Entwurf-API als REST-Route-Handler (Laden/Speichern/Verwerfen) | testbar, passt zu häufigem Auto-Save, klare Trennung | 2026-06-19 |
+| Optimistische Konflikterkennung über `updated_at`-Versionsmarke | „neuer Stand erkannt"-Hinweis ohne echtes Locking | 2026-06-19 |
+| localStorage-Fallback auch für eingeloggte Nutzer | Robustheit gegen Server-/Sitzungsfehler | 2026-06-19 |
+| Auto-Save-Hook mit selbstgebautem Debounce/Throttle | keine neue Abhängigkeit nötig | 2026-06-19 |
+| 14-Tage-Löschung: pg_cron-Job + Lazy-Guard beim Laden | native Löschung + garantierte Korrektheit | 2026-06-19 |
+| `data` speichert vollständigen Stand inkl. ausgeblendeter Felder | verlustfreies Fortsetzen (Pruning erst beim Absenden, PROJ-6) | 2026-06-19 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Überblick
+Zwei Speicherwege auf einer gemeinsamen Logik: ein **Auto-Save-Hook** beobachtet den Formularstand und schreibt ihn — anonym in den **Browser (localStorage)**, eingeloggt über eine **Entwurf-API** in die **Datenbank** (mit localStorage als Sicherheitsnetz). Beim Öffnen wird der passende Entwurf wiederhergestellt. Es entstehen: eine neue DB-Tabelle, eine kleine REST-API, ein Client-Hook samt Statusanzeige, eine Wiederherstellungs-/Übernahme-Logik und eine Dashboard-Karte.
+
+### A) Bausteine (Struktur)
+```
+Formularseite /antrag/flexcover
+├── FormEngine (PROJ-3)
+│   ├── Kopfbereich (header-Slot)
+│   │   └── Speicher-Statusanzeige  ("Wird gespeichert…" / "Gespeichert vor X Min." /
+│   │       "Lokal gesichert" / "Nicht gespeichert — erneut versuchen")
+│   │       + Button "Jetzt speichern"   + Button "Verwerfen" (mit Bestätigung)
+│   ├── … Abschnitte / Felder …
+│   └── meldet den aktiven Abschnitt (kleine Engine-Anpassung: kontrollierter Tab)
+│
+├── Auto-Save-Hook (Client)
+│   ├── beobachtet Formularwerte + aktiven Abschnitt
+│   ├── speichert debounced (~2 s) + bei Tab-Wechsel / Seite-verlassen
+│   ├── anonym → localStorage  |  eingeloggt → Entwurf-API (+ localStorage-Fallback)
+│   └── liefert Status: leer / speichert / gespeichert / Fehler / "neuer Stand erkannt"
+│
+├── Wiederherstellung beim Laden
+│   ├── eingeloggt → API lädt Server-Entwurf (Quelle der Wahrheit), sonst lokaler Fallback
+│   ├── anonym → localStorage
+│   └── Hinweis "Entwurf vom <Datum> geladen" + "Verwerfen und neu beginnen"
+│
+└── Übernahme anonym → Konto (nach Login/Registrierung)
+    └── lokalen Entwurf erkennen → übernehmen  |  bei vorhandenem Server-Entwurf: Konfliktabfrage
+
+Dashboard /dashboard
+└── Karte "Meine Anträge"
+    └── Entwurf-Eintrag: Formularname + "zuletzt gespeichert" + "Weiter bearbeiten" / "Verwerfen"
+
+Backend (neu)
+├── Entwurf-API (Route Handlers)
+│   ├── Laden  → aktuellen Entwurf holen (Lazy-Guard: nie etwas > 14 Tage)
+│   ├── Speichern → anlegen/aktualisieren mit Konflikterkennung
+│   └── Verwerfen → Entwurf löschen
+├── Tabelle form_drafts (RLS: nur Eigenzugriff)
+└── pg_cron-Job: tägliche Löschung von Entwürfen > 14 Tage
+```
+
+### B) Datenmodell (Klartext)
+**Server-Entwurf** (`public.form_drafts`):
+- **id** — eindeutige Kennung
+- **user_id** — Eigentümer (Verweis auf das Auth-Konto)
+- **form_id** — welches Formular (z. B. „flexcover"); zukunftssicher für Multi-Form
+- **data** — kompletter Formularstand als JSON, **inkl. aktuell ausgeblendeter Felder** (verlustfrei)
+- **active_section** — zuletzt aktiver Abschnitt/Tab
+- **created_at / updated_at** — Zeitstempel; `updated_at` dient zugleich als **Versionsmarke** für die Konflikterkennung
+- **Eindeutigkeit:** genau **ein** Entwurf pro (user_id, form_id)
+- **Zugriff:** Row Level Security, ausschließlich Eigenzugriff (Lesen/Anlegen/Ändern/Löschen nur für den Eigentümer) — gleiches Muster wie `profiles`
+- **Aufbewahrung:** pg_cron löscht alles, das 14 Tage nicht bearbeitet wurde; die Lade-Funktion gibt zusätzlich nie einen abgelaufenen Entwurf zurück (Lazy-Guard)
+
+**Lokaler Entwurf** (localStorage):
+- Schlüssel pro Formular (z. B. `flexcover:draft`), enthält `data` + `active_section` + Zeitstempel
+- anonym: Quelle der Wahrheit; eingeloggt: nur Sicherheitsnetz bei Server-/Sitzungsfehlern
+
+### C) Wichtige Tech-Entscheidungen (Begründung)
+- **Server-Entwürfe in der Datenbank (JSON-Spalte)** statt als Datei im Storage: strukturiert, atomar aktualisierbar, RLS-absicherbar, einfach pro Nutzer abfragbar.
+- **Ein Datensatz pro (Nutzer, Formular)** über eine Eindeutigkeitsregel: setzt „ein Entwurf" technisch durch und macht Speichern zu einem einfachen Anlegen-oder-Aktualisieren.
+- **Entwurf-API als REST-Route-Handler** (Laden/Speichern/Verwerfen) statt Server Actions: gut testbar (Integrationstests), passt zum häufigen Auto-Save und trennt die drei Operationen sauber. Erste API-Routen des Projekts.
+- **Optimistische Konflikterkennung über den Zeitstempel**: ermöglicht den „neuer Stand erkannt"-Hinweis ohne echtes Sperren — leichtgewichtig und für einen Solo-Antragsteller ausreichend.
+- **localStorage-Fallback auch für Eingeloggte**: Server-Ausfall oder abgelaufene Sitzung führen nicht zu Datenverlust.
+- **Selbstgebauter Debounce/Throttle im Hook**: keine neue Abhängigkeit nötig.
+- **pg_cron + Lazy-Guard**: native, zuverlässige Löschung; korrekt selbst dann, wenn der Job einmal nicht läuft.
+- **Wiederverwendung der PROJ-1-Muster** (`set_updated_at`-Trigger, RLS default-deny + Eigenzugriff): Konsistenz und Sicherheit „by default".
+
+### D) Abläufe (kurz)
+- **Anonym:** Tippen → ~2 s → localStorage; Reload → Wiederherstellung; „Verwerfen" → lokal leeren.
+- **Eingeloggt:** Tippen → ~2 s (gedrosselt) → API speichert; Status „Gespeichert vor X"; parallel lokales Netz.
+- **Übernahme:** nach Login prüft die App den lokalen Entwurf → kein Server-Entwurf: übernehmen; vorhandener Server-Entwurf: nachfragen.
+- **Konflikt:** Speichern mit veralteter Versionsmarke → API meldet „neuer Stand" → Hinweis „neu laden?".
+- **Fehler:** Speichern scheitert → Status „Nicht gespeichert", lokaler Erhalt, automatischer Neuversuch; Sitzung abgelaufen → Hinweis „erneut anmelden", lokaler Erhalt.
+
+### E) Abhängigkeiten
+**Keine neuen Pakete.** Nutzt vorhandenes Supabase (DB/Auth/RLS) + react-hook-form (Formularstand). Voraussetzung: **pg_cron-Extension** in beiden Supabase-Projekten (Dev/Prod) aktivieren — beim `/backend` einrichten.
 
 ## QA Test Results
 _To be added by /qa_
