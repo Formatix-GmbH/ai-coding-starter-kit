@@ -202,6 +202,26 @@ Backend (neu)
 ### E) Abhängigkeiten
 **Keine neuen Pakete.** Nutzt vorhandenes Supabase (DB/Auth/RLS) + react-hook-form (Formularstand). Voraussetzung: **pg_cron-Extension** in beiden Supabase-Projekten (Dev/Prod) aktivieren — beim `/backend` einrichten.
 
+## Implementation Notes (Backend, 2026-06-19)
+
+**Migrationen** (`supabase/migrations/`):
+- `20260619120000_form_drafts.sql` — Tabelle `public.form_drafts` (id, user_id→auth.users ON DELETE CASCADE, form_id, data jsonb, active_section, created_at, updated_at), Unique `(user_id, form_id)`, RLS **owner-only** (select/insert/update/delete je `auth.uid() = user_id`), explizite GRANTs für `authenticated` (kein `anon`), `set_updated_at`-Trigger (wiederverwendet), Index auf `updated_at`.
+- `20260619120100_form_drafts_retention.sql` — `pg_cron`-Job „delete-stale-form-drafts" (täglich 03:00 UTC, löscht `updated_at < now() - 14 days`). Lazy-Guard in der API garantiert Korrektheit auch ohne laufenden Job.
+
+**Entwurf-API** (`src/app/api/drafts/[formId]/route.ts`):
+- **GET** — lädt den Entwurf (oder `null`); Lazy-Guard löscht/verschweigt > 14 Tage alte Entwürfe.
+- **PUT** — speichert (Insert/Update); optimistische Konflikterkennung über `expectedUpdatedAt` vs. Server-`updated_at` → **409** mit `conflict:true` + aktuellem Server-Stand; `force:true` überschreibt (für Übernahme anonym→Konto); **413** bei > 1 MB; **400** bei ungültigem Body; **401** ohne Anmeldung.
+- **DELETE** — verwirft den Entwurf.
+- Auth via Supabase-Server-Client (Cookies) + RLS als zweite Verteidigungslinie.
+
+**Hilfsmodule:** `src/lib/drafts/{types,constants,store}.ts` (Datenzugriff gekapselt, testbar), `src/lib/validation/draft.ts` (Zod: `formIdSchema`, `draftPayloadSchema`).
+
+**Tests:** `src/app/api/drafts/[formId]/route.test.ts` — 14 Integrationstests (401/400/413/409, Insert/Update/force, Lazy-Guard, DELETE). Gesamt 61 Unit-Tests grün, `tsc`/ESLint/`build` ✓.
+
+**Offen für Folge-Schritte:**
+- Migrationen müssen noch auf **Dev/Prod** angewendet und **pg_cron** aktiviert werden (RLS-Freigabe + Anwenden mit Nutzer).
+- Frontend-Anbindung (Auto-Save-Hook, Statusanzeige, Wiederherstellung/Übernahme, Dashboard-Karte, kontrollierter aktiver Tab) → `/frontend PROJ-4`.
+
 ## QA Test Results
 _To be added by /qa_
 
