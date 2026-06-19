@@ -16,7 +16,7 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger√
 | P0 (MVP) | User Authentication (Register, Login, Passwort-Reset) | Planned |
 | P0 (MVP) | Dynamic Form Engine (definitionsgesteuert: Feldtypen, Sichtbarkeitslogik, Validierung, Wiederholgruppen, Tabellen) | Planned |
 | P0 (MVP) | FlexCover Formulardefinition (Beispielformular auf der Engine) | Planned |
-| P0 (MVP) | Formular-Entwurf & Auto-Save | Roadmap |
+| P0 (MVP) | Formular-Entwurf & Auto-Save | Planned |
 | P0 (MVP) | PDF-Generierung & Download | Roadmap |
 | P0 (MVP) | Formular-Einreichung & Best√§tigung | Roadmap |
 | P1 | PDF-Versand per E-Mail | Roadmap |
