@@ -10,16 +10,12 @@ import {
   updateDraftRow,
   deleteDraftRow,
 } from "@/lib/drafts/store";
-import { DRAFT_RETENTION_DAYS, MAX_DRAFT_BYTES } from "@/lib/drafts/constants";
+import { MAX_DRAFT_BYTES } from "@/lib/drafts/constants";
+import { isDraftExpired } from "@/lib/drafts/expiry";
 import { draftPayloadSchema, formIdSchema } from "@/lib/validation/draft";
 import type { FormValues } from "@/lib/form-engine/types";
 
 type Params = { params: Promise<{ formId: string }> };
-
-function isExpired(updatedAt: string): boolean {
-  const ageMs = Date.now() - new Date(updatedAt).getTime();
-  return ageMs > DRAFT_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-}
 
 /** Lädt den aktuellen Entwurf (oder null). Abgelaufene Entwürfe werden nicht
  *  ausgeliefert und beim Zugriff gelöscht (Lazy-Guard). */
@@ -39,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   try {
     const draft = await getDraftRow(supabase, formId.data);
-    if (draft && isExpired(draft.updated_at)) {
+    if (draft && isDraftExpired(draft.updated_at)) {
       await deleteDraftRow(supabase, formId.data);
       return NextResponse.json({ draft: null });
     }

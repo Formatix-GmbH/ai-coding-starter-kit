@@ -224,6 +224,23 @@ Backend (neu)
 - Migrationen noch auf **Prod** anwenden (zusammen mit `/deploy`).
 - Frontend-Anbindung (Auto-Save-Hook, Statusanzeige, Wiederherstellung/Übernahme, Dashboard-Karte, kontrollierter aktiver Tab) → `/frontend PROJ-4`.
 
+## Implementation Notes (Frontend, 2026-06-19)
+
+**Engine-Erweiterung (PROJ-3):** `FormEngine` hat jetzt einen **kontrollierten aktiven Tab** (`initialSection` + internes State) und meldet Änderungen über `onStateChange(values, activeSection)` (per Ref entkoppelt, feuert nur bei echten Werte-/Abschnittswechseln). Rückwärtskompatibel (Props optional; Demo/PROJ-11 unverändert).
+
+**Client-Lib** (`src/lib/drafts/client.ts`): localStorage-Helfer (`readLocalDraft`/`writeLocalDraft`/`clearLocalDraft`, SSR-sicher, Ablauf-Guard) + API-Fetch-Helfer (`fetchServerDraft`/`saveServerDraft`/`deleteServerDraft`) mit diskriminiertem `SaveResult` (saved/conflict/unauthorized/error).
+
+**Auto-Save-Hook** (`src/hooks/useDraftAutosave.ts`): debounced (~2 s) + Flush bei `visibilitychange`/`pagehide`; Modus `local` (anonym) bzw. `server` (eingeloggt, mit localStorage-Sicherheitsnetz bei Server-/Sitzungsfehlern); optimistische Konflikterkennung über `updated_at`; Status `idle/saving/saved/error/stale/sessionExpired`; `save()` (Jetzt speichern), `forceSave()` (Konflikt überschreiben), `discard()`; automatischer Wiederholversuch bei Fehler.
+
+**Seiten-Orchestrierung:**
+- `src/app/antrag/flexcover/page.tsx` ist jetzt **Server-Komponente**: lädt Nutzer + (nicht abgelaufenen) Server-Entwurf vor und übergibt an die Client-Komponente.
+- `src/components/flexcover/FlexCoverAntrag.tsx` (Client): löst den Anfangszustand auf (localStorage/Server), **Übernahme anonym→Konto** (auto bei nur lokalem Stand; Dialog-Abfrage bei lokalem **und** Server-Stand), rendert Status-Leiste („Wird gespeichert…/Gespeichert vor X/Lokal gesichert/Nicht gespeichert/Sitzung abgelaufen/Konflikt"), **„Jetzt speichern"** + **„Verwerfen"** (Bestätigung), Wiederherstellungs-Hinweis, **Konflikt-Alert** („Neu laden"/„Diesen Stand behalten"), Hinweis bei nicht verfügbarem localStorage.
+- **Dashboard** (`src/components/flexcover/DraftListItem.tsx`): Karte „Meine Anträge" listet den laufenden Entwurf mit „zuletzt gespeichert" + „Weiter bearbeiten"/„Verwerfen".
+
+**Verifikation:** `tsc` ✓, ESLint ✓ (nur vorbestehende Warnung in `use-toast.ts`), `vitest run` 61/61 ✓, `playwright test` 64/64 ✓ (keine Regressionen), `npm run build` ✓.
+
+**Hinweis:** E2E-Tests speziell für die Auto-Save-/Entwurf-Flows schreibt `/qa PROJ-4` (inkl. eingeloggter Pfade).
+
 ## QA Test Results
 _To be added by /qa_
 

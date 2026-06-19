@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FormProvider,
   useForm,
@@ -54,6 +54,11 @@ export interface FormEngineProps {
   /** Optionaler Kopfbereich (z. B. Titel/Hinweis). Bei Tab-Layout über dem
    *  Eingabebereich (rechte Spalte) platziert, damit die Navi links allein steht. */
   header?: ReactNode;
+  /** Anfangs aktiver Abschnitt (Tab-Layout) — z. B. zum Fortsetzen eines Entwurfs. */
+  initialSection?: string;
+  /** Wird bei jeder Werte- oder Abschnittsänderung aufgerufen (für Auto-Save).
+   *  Sollte eine stabile Referenz sein. */
+  onStateChange?: (values: FormValues, activeSection: string) => void;
 }
 
 export function FormEngine({
@@ -62,6 +67,8 @@ export function FormEngine({
   defaultValues = {},
   onSubmit,
   header,
+  initialSection,
+  onStateChange,
 }: FormEngineProps) {
   const methods = useForm<FieldValues>({
     defaultValues: defaultValues as FieldValues,
@@ -111,6 +118,20 @@ export function FormEngine({
     return map;
   }, [formState.errors, definition.sections]);
 
+  // Aktiver Abschnitt (kontrolliert), damit er gespeichert/wiederhergestellt werden kann.
+  const [activeSection, setActiveSection] = useState(
+    initialSection ?? definition.sections[0]?.key ?? "",
+  );
+
+  // Änderungen nach außen melden (für Auto-Save). onStateChange über Ref entkoppelt,
+  // damit der Effekt nur bei echten Werte-/Abschnittsänderungen feuert.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+  useEffect(() => {
+    onStateChangeRef.current?.(getValues() as FormValues, activeSection);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watched, activeSection]);
+
   return (
     <FormEngineProvider value={{ definition, registry, validateSingleField }}>
       <FormProvider {...methods}>
@@ -120,6 +141,8 @@ export function FormEngine({
               sections={visibleSections}
               errorCounts={errorCountBySection}
               header={header}
+              value={activeSection}
+              onValueChange={setActiveSection}
             />
           )}
           {definition.layout !== "tabs" && header && <div className="mb-6">{header}</div>}
@@ -158,14 +181,21 @@ function TabsLayout({
   sections,
   errorCounts,
   header,
+  value,
+  onValueChange,
 }: {
   sections: SectionNode[];
   errorCounts: Record<string, number>;
   header?: ReactNode;
+  value: string;
+  onValueChange: (v: string) => void;
 }) {
   if (sections.length === 0) return null;
+  // Falls der aktive Abschnitt (z. B. aus einem Entwurf) nicht sichtbar ist,
+  // auf den ersten sichtbaren zurückfallen.
+  const current = sections.some((s) => s.key === value) ? value : sections[0].key;
   return (
-    <Tabs defaultValue={sections[0].key} orientation="vertical" className="w-full">
+    <Tabs value={current} onValueChange={onValueChange} orientation="vertical" className="w-full">
       {/* Überschrift: nur über dem Eingabebereich (um die Navi-Breite eingerückt),
           damit die Navi links eigenständig bleibt und mit den Feldern fluchtet. */}
       {header && <div className="mb-6 md:pl-[16.5rem]">{header}</div>}

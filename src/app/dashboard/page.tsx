@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getDraftRow } from "@/lib/drafts/store";
+import { isDraftExpired } from "@/lib/drafts/expiry";
+import { flexcoverDefinition } from "@/lib/forms/flexcover/definition";
+import { DraftListItem } from "@/components/flexcover/DraftListItem";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,6 +33,10 @@ export default async function DashboardPage() {
     fullName = profile?.full_name ?? null;
   }
   const greeting = fullName ? `Willkommen zurück, ${fullName}` : "Willkommen zurück";
+
+  // Laufenden Entwurf laden (nicht abgelaufen).
+  const draftRow = await getDraftRow(supabase, flexcoverDefinition.id);
+  const activeDraft = draftRow && !isDraftExpired(draftRow.updated_at) ? draftRow : null;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
@@ -69,10 +77,19 @@ export default async function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-            Noch keine gespeicherten Anträge. Das Speichern von Entwürfen kommt
-            mit PROJ-4.
-          </p>
+          {activeDraft ? (
+            <DraftListItem
+              formId={flexcoverDefinition.id}
+              title={flexcoverDefinition.title}
+              href="/antrag/flexcover"
+              updatedAt={activeDraft.updated_at}
+            />
+          ) : (
+            <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+              Noch keine gespeicherten Entwürfe. Sobald Sie einen Antrag beginnen,
+              erscheint er hier.
+            </p>
+          )}
         </CardContent>
       </Card>
     </main>

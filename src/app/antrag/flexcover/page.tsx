@@ -1,43 +1,24 @@
-"use client";
-
-import Link from "next/link";
-import { toast } from "sonner";
-import { FormEngine } from "@/components/form-engine/FormEngine";
+import { createClient } from "@/lib/supabase/server";
+import { getDraftRow } from "@/lib/drafts/store";
+import { isDraftExpired } from "@/lib/drafts/expiry";
 import { flexcoverDefinition } from "@/lib/forms/flexcover/definition";
-import type { FormValues } from "@/lib/form-engine/types";
-import { Button } from "@/components/ui/button";
+import { FlexCoverAntrag } from "@/components/flexcover/FlexCoverAntrag";
+import type { DraftRow } from "@/lib/drafts/types";
 
-export default function FlexCoverAntragPage() {
-  function handleSubmit(_values: FormValues) {
-    // Die Engine liefert hier bereits XSD-konform strukturierte, von ausgeblendeten
-    // Feldern bereinigte Werte. PDF-Erzeugung & Download docken an diesem Submit-
-    // Event an (PROJ-5). Hinweis (DSGVO): bewusst kein Logging der Daten (PII).
-    toast.success("Antrag erfasst. Die PDF-Erstellung folgt mit PROJ-5.");
+// Anonym zugänglich. Für eingeloggte Nutzer wird ein vorhandener (nicht
+// abgelaufener) Server-Entwurf serverseitig vorgeladen; anonyme Entwürfe liest
+// die Client-Komponente aus dem localStorage.
+export default async function FlexCoverAntragPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let serverDraft: DraftRow | null = null;
+  if (user) {
+    const draft = await getDraftRow(supabase, flexcoverDefinition.id);
+    serverDraft = draft && !isDraftExpired(draft.updated_at) ? draft : null;
   }
 
-  const header = (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold">{flexcoverDefinition.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Füllen Sie den Antrag Abschnitt für Abschnitt aus. Pflichtfelder sind
-          mit <span className="text-destructive">*</span> markiert. Ein Konto ist
-          zum Ausfüllen nicht erforderlich.
-        </p>
-      </div>
-      <Button asChild variant="ghost" size="sm">
-        <Link href="/">Zurück</Link>
-      </Button>
-    </div>
-  );
-
-  return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <FormEngine
-        definition={flexcoverDefinition}
-        onSubmit={handleSubmit}
-        header={header}
-      />
-    </main>
-  );
+  return <FlexCoverAntrag isAuthenticated={Boolean(user)} serverDraft={serverDraft} />;
 }
