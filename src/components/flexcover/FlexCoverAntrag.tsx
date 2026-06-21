@@ -261,6 +261,17 @@ function FlexCoverForm({
     toast.success("Entwurf verworfen.");
   }
 
+  // Nur in der Entwicklung: Formular mit vollständigem Beispieldatensatz füllen.
+  const isDev = process.env.NODE_ENV !== "production";
+  async function handleLoadSample() {
+    const { flexcoverSampleData } = await import("@/lib/forms/flexcover/sample-data");
+    setFormValues(flexcoverSampleData);
+    setFormSection(undefined);
+    setNoticeDismissed(true);
+    setFormKey((k) => k + 1);
+    toast.info("Testdaten geladen.");
+  }
+
   const statusText = (() => {
     switch (status) {
       case "saving":
@@ -321,6 +332,18 @@ function FlexCoverForm({
           </button>
         </div>
         <div className="flex items-center gap-1">
+          {isDev && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => void handleLoadSample()}
+              title="Nur in der Entwicklung sichtbar"
+            >
+              Testdaten laden
+            </Button>
+          )}
           {(lastSavedAt || resolved.loadedAt) && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
