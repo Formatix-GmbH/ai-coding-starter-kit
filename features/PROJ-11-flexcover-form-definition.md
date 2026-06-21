@@ -167,7 +167,7 @@ Keine neuen Pakete.
 **Dokumentierte Abweichungen vom XSD (bewusst):**
 1. **3-Jahres-Tabellen-Zellnotation:** XSD notiert die Matrixzellen flach (`Z1SP1`, `maDE1`). Die Engine liefert die semantisch identische Verschachtelung `werte.{zeile}.{spalte}` unter dem korrekten Container-Namen. Die flache Notation ist eine 1:1-mechanische Umformung beim späteren **XML-Export** (eigenes Feature). Container-Namen + Berichtsjahre (`jahr1/2/3`) sind XSD-konform.
 2. **`StandorteNeu`/`Begruendung`** sind echte XDP-Felder, aber nicht in der XSD. Sie sind in der AC ausdrücklich gefordert und erscheinen daher in der Ausgabe unter `SitzUndBedeutung` (kleine, bewusste Erweiterung).
-3. **`weitereAnmerkungen`** (6× im XDP, nie in XSD) wurde weggelassen — XSD ist autoritativ für die Ausgabe.
+3. **`weitereAnmerkungen`** — ~~weggelassen~~ **nachträglich aufgenommen (2026-06-21, im Zuge von PROJ-5/Option 3):** je Abschnitt außer „Sonstiges" ein Textfeld am Ende (im Web-Formular erfassbar + im originalgetreuen PDF). Nicht in der XSD → bewusste Erweiterung wie `StandorteNeu`. Umsetzung: Schleife am Ende von `definition.ts`.
 4. **Boolesche XSD-Felder** werden als `yesno_optional` ("Ja"/"Nein") erfasst statt `true/false`; Mapping auf `xs:boolean` erfolgt beim XML-Export.
 
 **Verifikation (nach Bugfixes):** `tsc --noEmit` ✓, ESLint ✓, `vitest run` 47/47 ✓, `playwright test` 64/64 ✓, `npm run build` ✓.

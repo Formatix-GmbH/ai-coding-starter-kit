@@ -174,6 +174,24 @@ Eskalationspfad (gleiche Grenze, anderer Adapter):
 ### F) Hinweis zur Treue-Abnahme
 Die flache Referenz lässt sich in der Build-Umgebung nicht automatisch rendern (kein `pdftoppm`) → **menschliche/fachliche Abnahme** am Prototyp (siehe „Treue-Abnahme" oben). Die Entwicklung rendert lokal gegen `Antragsformular flex&cover_flat.pdf`.
 
+## Implementation Notes (Frontend, 2026-06-21)
+
+**Renderer-Grenze:** `src/lib/pdf/index.ts` — `generateFlexcoverPdf(values) → Blob` (+ `flexcoverPdfFilename()`). Austauschbar: aktueller Adapter = `@react-pdf/renderer` (^4.5.1), clientseitig. Wechsel auf Chromium/iText tauscht nur diese Implementierung; Datenvertrag (bereinigte Engine-Werte) bleibt.
+
+**Layout:** `src/lib/pdf/flexcover/document.tsx` — dediziertes, originalgetreues FlexCover-Layout über **alle 9 Abschnitte**: amtliches Kopf-Banner (Seite 1), Label+Linien-Felder, zweispaltige Felder (PLZ/Ort, Standorte), Ja/Nein- und DE/Ausland-Auswahl mit Radio-Markierung, die 3-Jahres-Tabellen (Beschäftigte DE/AUS inkl. berechneter „Gesamtzahl"-Zeile; F&E Mitarbeiter/Aufwendungen; Investitionen; Azubis; Wertschöpfung), dynamische Begünstigten-Boxen + Länder-Tabelle, Unterschrift/Ort-Datum, Fußzeile „Seite X von Y". Eingabe = `pruneHiddenValues`-Ausgabe (sichtbare Felder inkl. leer; ausgeblendete fehlen → erscheinen nicht).
+
+**Assets:** `public/pdf/flexcover-header.png` (amtliches Banner, aus der flachen Vorlage gerendert/zugeschnitten, RGB). Schrift: Helvetica (Arial-ähnlich, eingebaut) — exaktes Arial via Arimo-Einbettung als Folgeschritt offen.
+
+**Auslösung:** `FlexCoverAntrag` Submit → bei gültigem Antrag PDF erzeugen + Download (dynamischer Import von `@/lib/pdf`, damit react-pdf nur im Browser bei Klick lädt). Fehler → Toast, Eingaben bleiben.
+
+**PROJ-11-Erweiterung (Option 3):** „Weitere Anmerkungen" je Abschnitt (außer Sonstiges) ins Formular aufgenommen (`definition.ts`), erscheint im Web-Formular und im PDF. Nicht in der XSD → bewusste Erweiterung (wie StandorteNeu). Siehe auch PROJ-11.
+
+**Treue-Methode:** Vorlage in der Build-Umgebung via Poppler (`pdftoppm`) zu PNG gerendert und visuell gegen `Antragsformular flex&cover_flat.pdf` (4 Seiten) abgeglichen; Layout vom Nutzer freigegeben (Linienstärke angepasst).
+
+**Verifikation:** `tsc` ✓, ESLint ✓, `vitest run` 84/84 ✓, `playwright test` 70/70 ✓, `npm run build` ✓.
+
+**Offen:** Arial-Einbettung (Arimo) für exakte Schrift; finale fachliche/behördliche Treue-Abnahme; Dateiname/Metadaten-Feinschliff. → für `/qa` bzw. Folgeschliff.
+
 ## QA Test Results
 _To be added by /qa_
 

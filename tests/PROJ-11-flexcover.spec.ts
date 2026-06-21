@@ -152,7 +152,8 @@ test("ausgeblendetes Detailfeld blockiert die Abgabe nicht", async ({ page }) =>
   await fillStable(byId(page, "SitzUndBedeutung.eignerstruktur"), "GmbH, alleiniger Gesellschafter");
 
   await page.getByRole("button", { name: /Antrag absenden/ }).click();
-  await expect(page.getByText(/Antrag erfasst/)).toBeVisible();
+  // PROJ-5: gültiger Antrag erzeugt das PDF (Download) und meldet Erfolg.
+  await expect(page.getByText(/PDF wurde erstellt|heruntergeladen/)).toBeVisible({ timeout: 15000 });
 });
 
 test("PLZ-Validierung: ungültige PLZ wird gemeldet", async ({ page }) => {

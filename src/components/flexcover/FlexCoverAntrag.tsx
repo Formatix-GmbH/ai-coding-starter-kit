@@ -232,9 +232,24 @@ function FlexCoverForm({
   const [formKey, setFormKey] = useState(0);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
 
-  function handleSubmit(_values: FormValues) {
-    // XSD-konforme, bereinigte Werte liefert die Engine. PDF/Einreichung: PROJ-5/6.
-    toast.success("Antrag erfasst. Die PDF-Erstellung folgt mit PROJ-5.");
+  async function handleSubmit(values: FormValues) {
+    // Die Engine liefert hier bereits validierte, XSD-konform bereinigte Werte
+    // (alle sichtbaren Felder inkl. leer). Erzeugung clientseitig (PII bleibt lokal).
+    try {
+      const { generateFlexcoverPdf, flexcoverPdfFilename } = await import("@/lib/pdf");
+      const blob = await generateFlexcoverPdf(values);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = flexcoverPdfFilename();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("PDF wurde erstellt und heruntergeladen.");
+    } catch {
+      toast.error("PDF konnte nicht erstellt werden. Bitte erneut versuchen.");
+    }
   }
 
   async function handleDiscard() {

@@ -561,3 +561,16 @@ export const flexcoverDefinition: FormDefinition = {
     },
   ],
 };
+
+// Amtliches Freitextfeld „Weitere Anmerkungen" am Ende jedes Abschnitts (außer
+// Sonstiges). Nicht in der XSD — bewusste Erweiterung für Originaltreue (PROJ-5,
+// Option 3: online erfassbar + im PDF). Wird ans Ende der Abschnittsfelder gehängt.
+for (const section of flexcoverDefinition.sections) {
+  if (section.key === "Sonstiges") continue;
+  section.children.push({
+    kind: "field",
+    key: "weitereAnmerkungen",
+    label: "Weitere Anmerkungen",
+    type: "textarea",
+  });
+}
