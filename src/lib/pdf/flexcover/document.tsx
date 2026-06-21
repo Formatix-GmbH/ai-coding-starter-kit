@@ -28,7 +28,9 @@ const styles = StyleSheet.create({
     paddingBottom: 46,
   },
   // Fixer Kopfbereich bei X/Y = 0,5 cm: Seite 1 Banner, Folgeseiten blauer Balken.
-  headerBar: { position: "absolute", top: MARGIN, left: MARGIN, width: BANNER_W, height: 9, backgroundColor: NAVY, borderRadius: 1 },
+  // Container seitenrelativ fixiert (top/left = 0,5 cm); der Balken füllt ihn.
+  headerBarBox: { position: "absolute", top: MARGIN, left: MARGIN, width: BANNER_W },
+  runningBar: { width: "100%", height: 9, backgroundColor: NAVY, borderRadius: 1 },
   banner: { marginLeft: MARGIN, width: BANNER_W, height: BANNER_H, marginBottom: 14 },
   body: { paddingHorizontal: 40 },
   title: { fontSize: 15, fontFamily: "Helvetica-Bold", color: NAVY, marginBottom: 6 },
@@ -262,7 +264,8 @@ export function FlexcoverDocument({
         {/* Folgeseiten: blauer Balken bei X = 0,5 cm (auf Seite 1 unterdrückt). */}
         <View
           fixed
-          render={({ pageNumber }) => (pageNumber > 1 ? <View style={styles.headerBar} /> : null)}
+          style={styles.headerBarBox}
+          render={({ pageNumber }) => (pageNumber > 1 ? <View style={styles.runningBar} /> : null)}
         />
 
         <View style={styles.body}>
