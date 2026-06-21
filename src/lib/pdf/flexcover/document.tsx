@@ -15,17 +15,22 @@ import { getByPath } from "@/lib/form-engine/paths";
 
 const NAVY = "#1b365d";
 const LINE = "#9aa3ad";
+const MARGIN = 14.17; // 0,5 cm Seitenrand für Kopf-Banner/Balken
+const BANNER_W = 595.28 - 2 * MARGIN; // A4-Breite minus 2× 0,5 cm
+const BANNER_H = (BANNER_W * 220) / 1466; // Banner-Seitenverhältnis (≈85 pt)
 
 const styles = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
     fontSize: 9.5,
     color: "#111111",
-    paddingTop: 26,
+    paddingTop: 32, // Inhalt-Oberkante auf Folgeseiten (unter dem blauen Balken)
     paddingBottom: 46,
   },
-  header: { width: "100%" },
-  body: { paddingHorizontal: 40, paddingTop: 10 },
+  // Fixer Kopfbereich bei X/Y = 0,5 cm: Seite 1 Banner, Folgeseiten blauer Balken.
+  headerBar: { position: "absolute", top: MARGIN, left: MARGIN, width: BANNER_W, height: 9, backgroundColor: NAVY, borderRadius: 1 },
+  banner: { marginLeft: MARGIN, width: BANNER_W, height: BANNER_H, marginBottom: 14 },
+  body: { paddingHorizontal: 40 },
   title: { fontSize: 15, fontFamily: "Helvetica-Bold", color: NAVY, marginBottom: 6 },
   intro: { fontSize: 8.5, color: "#333333", lineHeight: 1.4, marginBottom: 10 },
   sectionTitle: {
@@ -84,6 +89,8 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
     color: "#777777",
   },
+  footerRight: { flexDirection: "row", alignItems: "center" },
+  footerSquare: { width: 7, height: 7, backgroundColor: NAVY, marginLeft: 6 },
   signRow: { flexDirection: "row", gap: 24, marginTop: 18 },
   signItem: { flex: 1, borderTopWidth: 0.5, borderTopColor: "#555555", paddingTop: 3, fontSize: 8, color: "#555555" },
 });
@@ -249,8 +256,14 @@ export function FlexcoverDocument({
   return (
     <Document title="flex&cover – Förderantrag" author="flex&cover Antragsportal">
       <Page size="A4" style={styles.page}>
+        {/* Seite 1: amtliches Banner, linksbündig bei X = 0,5 cm. */}
         {/* eslint-disable-next-line jsx-a11y/alt-text */}
-        <Image style={styles.header} src={headerSrc} />
+        <Image style={styles.banner} src={headerSrc} />
+        {/* Folgeseiten: blauer Balken bei X = 0,5 cm (auf Seite 1 unterdrückt). */}
+        <View
+          fixed
+          render={({ pageNumber }) => (pageNumber > 1 ? <View style={styles.headerBar} /> : null)}
+        />
 
         <View style={styles.body}>
           <Text style={styles.title}>flex&cover</Text>
@@ -470,10 +483,13 @@ export function FlexcoverDocument({
           </View>
         </View>
 
-        {/* Fußzeile mit Seitennummerierung auf jeder Seite */}
+        {/* Fußzeile: links Formularkennung, rechts Seitenzahl + blaues Schmuckquadrat. */}
         <View style={styles.footer} fixed>
           <Text>flex&cover – Förderantrag</Text>
-          <Text render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
+          <View style={styles.footerRight}>
+            <Text render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
+            <View style={styles.footerSquare} />
+          </View>
         </View>
       </Page>
     </Document>
