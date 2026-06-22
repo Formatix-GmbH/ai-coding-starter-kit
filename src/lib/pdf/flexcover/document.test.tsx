@@ -1,10 +1,21 @@
 // @vitest-environment node
 import { describe, test, expect } from "vitest";
-import { renderToBuffer } from "@react-pdf/renderer";
+import { renderToBuffer, Font } from "@react-pdf/renderer";
 import { createElement } from "react";
+import path from "node:path";
 import type { FormValues } from "@/lib/form-engine/types";
 import { FlexcoverDocument } from "./document";
 import { flexcoverSampleData } from "@/lib/forms/flexcover/sample-data";
+
+// Im Node-Kontext die Arimo-Familie per Dateipfad registrieren (überschreibt die
+// Browser-URL-Registrierung des Dokuments; letzte Registrierung gewinnt).
+Font.register({
+  family: "Arimo",
+  fonts: [
+    { src: path.resolve("public/pdf/fonts/Arimo-Regular.woff"), fontWeight: "normal" },
+    { src: path.resolve("public/pdf/fonts/Arimo-Bold.woff"), fontWeight: "bold" },
+  ],
+});
 
 // Mini-PNG als Header (vermeidet Datei-/Netzabhängigkeit im Test).
 const HEADER =

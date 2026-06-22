@@ -1,8 +1,8 @@
 # PROJ-5: PDF-Generierung & Download
 
-## Status: In Review
+## Status: Approved
 **Created:** 2026-06-19
-**Last Updated:** 2026-06-21
+**Last Updated:** 2026-06-22
 
 ## Dependencies
 - **Requires:** PROJ-3 (Dynamic Form Engine) — Submit-Event, Validierung, Sichtbarkeitslogik
@@ -200,7 +200,7 @@ Die flache Referenz lässt sich in der Build-Umgebung nicht automatisch rendern 
 ### Zusammenfassung
 - **Acceptance Criteria:** alle erfüllt.
 - **Automatisierte Tests:** 88 Unit/Integration (Vitest) + 74 E2E (Playwright, beide Browser) — **alle grün** (E2E mit vorgewärmtem Dev-Server). Neu: `src/lib/pdf/flexcover/document.test.tsx` (4: gültiges PDF, leere/Lückendaten, dynamische Listen), `tests/PROJ-5-pdf.spec.ts` (2×2: Download-Flow, Validierungssperre).
-- **Bugs:** 0 Critical · 0 High · 0 Medium · 2 Low.
+- **Bugs:** 0 Critical · 0 High · 0 Medium · 2 Low → **BUG-1 behoben** (Arimo eingebettet); BUG-2 (externe Treue-Abnahme) offen.
 - **Produktionsreife:** ✅ **READY** (keine Critical/High).
 
 ### Acceptance Criteria (Detail)
@@ -229,7 +229,7 @@ Die flache Referenz lässt sich in der Build-Umgebung nicht automatisch rendern 
 ### Bugs / Findings
 | ID | Sev. | Beschreibung | Empfehlung |
 |----|------|--------------|------------|
-| BUG-1 | Low | Schrift ist die eingebaute Helvetica (Arial-ähnlich), nicht das exakte **Arial**. Geringe optische Abweichung. | Arimo/Liberation Sans einbetten (metrisch-kompatibel) — geplanter Folgeschliff. |
+| BUG-1 | Low | Schrift war Helvetica statt exaktes Arial. | ✅ **behoben**: **Arimo** (Arial-metrisch-kompatibel, Apache-2.0, WOFF) eingebettet — Browser via `/public`-URL (in `src/lib/pdf/index.ts`), Node via Dateipfad. Per `pdffonts` als eingebettete Subset-Schrift bestätigt; Umlaute korrekt. |
 | BUG-2 | Low | Finale **fachliche/behördliche Treue-Abnahme** steht aus (Prozess-Punkt aus der Spec). | Vor Produktiv-Einreichung extern bestätigen lassen. |
 
 ### Umgebungs-Hinweis (kein Code-Defekt)

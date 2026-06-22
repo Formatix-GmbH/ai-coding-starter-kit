@@ -1,5 +1,22 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run start:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(git log:*)",
+      "Bash(git ls-files:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(ls:*)",
+      "Bash(npm i *)"
+    ],
     "deny": [
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
@@ -19,22 +36,6 @@
       "Edit(**/.env*)",
       "Edit(**/secrets/**)",
       "Edit(**/.ssh/**)"
-    ],
-    "allow": [
-      "Bash(npm install)",
-      "Bash(npm run dev:*)",
-      "Bash(npm run build:*)",
-      "Bash(npm run lint:*)",
-      "Bash(npm run start:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git tag:*)",
-      "Bash(git log:*)",
-      "Bash(git ls-files:*)",
-      "Bash(lsof:*)",
-      "Bash(kill:*)",
-      "Bash(npx shadcn@latest add:*)",
-      "Bash(ls:*)"
     ]
   }
 }

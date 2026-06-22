@@ -13,6 +13,10 @@ import {
 import type { FormValues } from "@/lib/form-engine/types";
 import { getByPath } from "@/lib/form-engine/paths";
 
+// Hinweis: Die Schrift „Arimo" (Arial-metrisch-kompatibel, frei einbettbar) wird
+// umgebungsspezifisch registriert — im Browser in der PDF-Grenze (src/lib/pdf/index.ts,
+// öffentliche URL), im Node-Render per Dateipfad. Dieses Layout nutzt nur die Familie.
+
 const NAVY = "#1b365d";
 const LINE = "#9aa3ad";
 const MARGIN = 14.17; // 0,5 cm Seitenrand für Kopf-Banner/Balken
@@ -21,7 +25,7 @@ const BANNER_H = (BANNER_W * 220) / 1466; // Banner-Seitenverhältnis (≈85 pt)
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: "Helvetica",
+    fontFamily: "Arimo",
     fontSize: 9.5,
     color: "#111111",
     paddingTop: 32, // Inhalt-Oberkante auf Folgeseiten (unter dem blauen Balken)
@@ -33,11 +37,11 @@ const styles = StyleSheet.create({
   runningBar: { width: "100%", height: 9, backgroundColor: NAVY, borderRadius: 1 },
   banner: { marginLeft: MARGIN, width: BANNER_W, height: BANNER_H, marginBottom: 14 },
   body: { paddingHorizontal: 40 },
-  title: { fontSize: 15, fontFamily: "Helvetica-Bold", color: NAVY, marginBottom: 6 },
+  title: { fontSize: 15, fontFamily: "Arimo", fontWeight: "bold", color: NAVY, marginBottom: 6 },
   intro: { fontSize: 8.5, color: "#333333", lineHeight: 1.4, marginBottom: 10 },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Arimo", fontWeight: "bold",
     color: NAVY,
     marginTop: 14,
     marginBottom: 6,
@@ -65,17 +69,17 @@ const styles = StyleSheet.create({
   choiceOptText: { fontSize: 9 },
 
   group: { borderWidth: 1, borderColor: "#d4d8dd", borderRadius: 2, padding: 8, marginBottom: 8 },
-  groupTitle: { fontSize: 9, fontFamily: "Helvetica-Bold", color: "#555555", marginBottom: 6 },
+  groupTitle: { fontSize: 9, fontFamily: "Arimo", fontWeight: "bold", color: "#555555", marginBottom: 6 },
 
   // Tabellen
   table: { marginBottom: 8 },
   tHead: { flexDirection: "row", backgroundColor: "#eef1f4", borderWidth: 0.5, borderColor: LINE },
-  tHeadLabel: { flex: 1, padding: 4, fontSize: 8.5, fontFamily: "Helvetica-Bold" },
-  tHeadYear: { width: 70, padding: 4, fontSize: 8.5, fontFamily: "Helvetica-Bold", textAlign: "center", borderLeftWidth: 0.5, borderLeftColor: LINE },
+  tHeadLabel: { flex: 1, padding: 4, fontSize: 8.5, fontFamily: "Arimo", fontWeight: "bold" },
+  tHeadYear: { width: 70, padding: 4, fontSize: 8.5, fontFamily: "Arimo", fontWeight: "bold", textAlign: "center", borderLeftWidth: 0.5, borderLeftColor: LINE },
   tRow: { flexDirection: "row", borderWidth: 0.5, borderTopWidth: 0, borderColor: LINE },
   tRowTotal: { backgroundColor: "#f6f8fa" },
   tCellLabel: { flex: 1, padding: 4, fontSize: 8.5 },
-  tCellLabelBold: { fontFamily: "Helvetica-Bold" },
+  tCellLabelBold: { fontFamily: "Arimo", fontWeight: "bold" },
   tCell: { width: 70, padding: 4, fontSize: 9, textAlign: "right", borderLeftWidth: 0.5, borderLeftColor: LINE },
 
   footer: {

@@ -20,7 +20,7 @@
 | PROJ-3 | Dynamic Form Engine (definitionsgesteuert) | Approved | [PROJ-3](PROJ-3-dynamic-form-engine.md) | 2026-06-16 |
 | PROJ-11 | FlexCover Formulardefinition (Beispielformular auf der Engine) | Approved | [PROJ-11](PROJ-11-flexcover-form-definition.md) | 2026-06-18 |
 | PROJ-4 | Formular-Entwurf & Auto-Save | Approved | [PROJ-4](PROJ-4-formular-entwurf-auto-save.md) | 2026-06-16 |
-| PROJ-5 | PDF-Generierung & Download | In Review | [PROJ-5](PROJ-5-pdf-generierung-download.md) | 2026-06-16 |
+| PROJ-5 | PDF-Generierung & Download | Approved | [PROJ-5](PROJ-5-pdf-generierung-download.md) | 2026-06-16 |
 | PROJ-6 | Formular-Einreichung & Bestätigung | Roadmap | — | 2026-06-16 |
 | PROJ-7 | PDF-Versand per E-Mail | Roadmap | — | 2026-06-16 |
 | PROJ-8 | KI-gestützte Formularausfüllung | Roadmap | — | 2026-06-16 |
