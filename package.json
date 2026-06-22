@@ -4,6 +4,9 @@
   "description": "AI Coding Starter Kit with AI Agent Team System for Claude Code",
   "private": true,
   "scripts": {
+    "dropbox:ignore-next": "node scripts/dropbox-ignore-next.mjs",
+    "predev": "node scripts/dropbox-ignore-next.mjs",
+    "prebuild": "node scripts/dropbox-ignore-next.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
