@@ -1,8 +1,8 @@
 # PROJ-5: PDF-Generierung & Download
 
-## Status: Architected
+## Status: In Review
 **Created:** 2026-06-19
-**Last Updated:** 2026-06-19
+**Last Updated:** 2026-06-21
 
 ## Dependencies
 - **Requires:** PROJ-3 (Dynamic Form Engine) — Submit-Event, Validierung, Sichtbarkeitslogik
@@ -193,7 +193,54 @@ Die flache Referenz lässt sich in der Build-Umgebung nicht automatisch rendern 
 **Offen:** Arial-Einbettung (Arimo) für exakte Schrift; finale fachliche/behördliche Treue-Abnahme; Dateiname/Metadaten-Feinschliff. → für `/qa` bzw. Folgeschliff.
 
 ## QA Test Results
-_To be added by /qa_
+
+**Getestet:** 2026-06-22 · **Tester:** QA (automatisiert + visueller Treue-Abgleich + Audit) · **Build:** `d6f95f3`
+**Umgebung:** Chromium + Mobile Safari, Next 16 Dev-Server, Poppler-Render gegen die flache Vorlage.
+
+### Zusammenfassung
+- **Acceptance Criteria:** alle erfüllt.
+- **Automatisierte Tests:** 88 Unit/Integration (Vitest) + 74 E2E (Playwright, beide Browser) — **alle grün** (E2E mit vorgewärmtem Dev-Server). Neu: `src/lib/pdf/flexcover/document.test.tsx` (4: gültiges PDF, leere/Lückendaten, dynamische Listen), `tests/PROJ-5-pdf.spec.ts` (2×2: Download-Flow, Validierungssperre).
+- **Bugs:** 0 Critical · 0 High · 0 Medium · 2 Low.
+- **Produktionsreife:** ✅ **READY** (keine Critical/High).
+
+### Acceptance Criteria (Detail)
+| Bereich | Ergebnis | Nachweis |
+|---|---|---|
+| Gültiger Antrag → PDF-Download | ✅ | E2E „gültiger Antrag erzeugt PDF-Download" (prüft Dateiname + `%PDF`) |
+| Ungültig → kein PDF, Fehler, Eingaben bleiben | ✅ | E2E „unvollständiger Antrag … Validierungsfehler" |
+| Anonym ohne Login | ✅ | E2E (kein Auth-Kontext) |
+| 9 Abschnitte, Labels, Logo, A4 | ✅ | Visueller Abgleich (Poppler) Seiten 1–4 |
+| Sichtbare leere Felder erscheinen leer | ✅ | Visuell + Unit (leere Werte) |
+| Ausgeblendete Felder erscheinen nicht | ✅ | Eingabe = `pruneHiddenValues`; `has()`-Gating der bedingten Felder |
+| Ja/Nein & DE/Ausland korrekt markiert | ✅ | Visuell (Radio gefüllt) |
+| Mehrere Begünstigte/Länder paginieren | ✅ | Unit „dynamische Listen" + visuell |
+| Feste 3-Jahres-Tabellen (Jahresspalten, Werte, Gesamtzeile) | ✅ | Visuell Seiten 2–4 |
+| Seitennummerierung | ✅ | Fußzeile „Seite X von Y" + Schmuckquadrat |
+| Renderer hinter austauschbarer Grenze | ✅ | `generateFlexcoverPdf(values) → Blob` (Code-Review) |
+| Anonym clientseitig: Daten verlassen Browser nicht | ✅ | Submit ohne Netzwerk-POST; nur statisches Header-Asset wird geladen |
+| Erzeugungsfehler → Meldung, Eingaben bleiben | ✅ | `try/catch` → Fehler-Toast (Code-Review) |
+
+### Security / DSGVO-Audit
+- **Clientseitige Erzeugung:** PDF entsteht im Browser; beim Absenden kein Versand der Formulardaten an den Server (nur GET des statischen Banner-Assets). PII bleibt lokal. ✅
+- **Kein Injection-Sink:** Werte werden als Text in react-pdf gesetzt (keine HTML-/XSS-Fläche). ✅
+- **Keine Secrets**, kein serverseitiger Zustand. ✅
+- **Dev-Button „Testdaten laden"** nur bei `NODE_ENV !== production` → in Produktion ausgeblendet. ✅
+
+### Bugs / Findings
+| ID | Sev. | Beschreibung | Empfehlung |
+|----|------|--------------|------------|
+| BUG-1 | Low | Schrift ist die eingebaute Helvetica (Arial-ähnlich), nicht das exakte **Arial**. Geringe optische Abweichung. | Arimo/Liberation Sans einbetten (metrisch-kompatibel) — geplanter Folgeschliff. |
+| BUG-2 | Low | Finale **fachliche/behördliche Treue-Abnahme** steht aus (Prozess-Punkt aus der Spec). | Vor Produktiv-Einreichung extern bestätigen lassen. |
+
+### Umgebungs-Hinweis (kein Code-Defekt)
+Die **volle E2E-Suite ist in dieser Umgebung instabil**, weil der Dropbox-Sync den `.next`-Ordner sperrt (`EPERM rename …app-paths-manifest.json` → Next-Dev-Server bricht beim Kaltstart ab). Mit vorgewärmtem Dev-Server laufen **74/74** grün. **Empfehlung:** `.next` aus dem Dropbox-Sync ausnehmen (oder Projekt außerhalb Dropbox), dann sind Build/Tests stabil.
+
+### Neue Testdateien
+- `src/lib/pdf/flexcover/document.test.tsx`
+- `tests/PROJ-5-pdf.spec.ts`
+
+## Deployment
+_To be added by /deploy_
 
 ## Deployment
 _To be added by /deploy_
