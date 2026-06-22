@@ -207,7 +207,7 @@ Dieselbe react-pdf-Erzeugung läuft sowohl im Browser (Download) als auch **serv
 **Datenbank** (`supabase/migrations/`):
 - `20260622120000_submissions.sql` — Tabelle `submissions` (id, user_id, form_id, reference unique, data jsonb, submitted_at). RLS owner-only: nur `select_own` + `insert_own` (bewusst keine update/delete-Policy — Einreichungen sind unveränderlich; Löschen nur über den Aufbewahrungs-Job). GRANT select/insert nur an `authenticated`. Indizes `(user_id, submitted_at desc)` und `(submitted_at)`.
 - `20260622120100_submissions_retention.sql` — pg_cron-Job `delete-stale-submissions` (täglich 03:00 UTC, > 30 Tage).
-- **Status:** Migrationsdateien erstellt; Anwendung auf DEV per Supabase-MCP **noch offen** (MCP-Token war abgelaufen) — nachzuholen, danach Security-Advisors prüfen.
+- **Status:** Auf DEV (`flexCover-dev`, xctlfuhwnhknzqqibmgm) per Supabase-MCP **angewandt** (2026-06-22); `public.submissions` mit aktiver RLS angelegt, Security-Advisor ohne neue Findings (nur vorbestehender Auth-Hinweis „Leaked Password Protection"). PROD-Anwendung erfolgt bei `/deploy`.
 
 **Lib-Schicht** (`src/lib/submissions/`): `types.ts`, `constants.ts` (30 Tage, 1 MB), `expiry.ts` (Lazy-Guard), `reference.ts` (`FC-<Jahr>-<6 Zeichen>`, Alphabet ohne 0/O/1/I/L), `store.ts` (insert mit Referenz-Retry bei Kollision, get, list), `client.ts` (`submitForm`, `resendSubmissionEmail`, `SubmitError` mit Status).
 
