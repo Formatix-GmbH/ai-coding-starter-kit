@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FormEngine } from "@/components/form-engine/FormEngine";
 import { flexcoverDefinition } from "@/lib/forms/flexcover/definition";
 import type { FormValues } from "@/lib/form-engine/types";
 import type { DraftRow } from "@/lib/drafts/types";
+import { submitForm, SubmitError } from "@/lib/submissions/client";
 import {
   readLocalDraft,
   clearLocalDraft,
@@ -226,15 +228,19 @@ function FlexCoverForm({
     initialSavedAt: resolved.savedAt,
   });
 
+  const router = useRouter();
+
   // Anfangswerte + Remount-Key (für „Verwerfen" → leeres Formular).
   const [formValues, setFormValues] = useState<FormValues>(resolved.values);
   const [formSection, setFormSection] = useState<string | undefined>(resolved.section);
   const [formKey, setFormKey] = useState(0);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(values: FormValues) {
-    // Die Engine liefert hier bereits validierte, XSD-konform bereinigte Werte
-    // (alle sichtbaren Felder inkl. leer). Erzeugung clientseitig (PII bleibt lokal).
+  // „PDF herunterladen" — für alle Nutzer. Erzeugung clientseitig (PII bleibt
+  // lokal), ohne Referenznummer (es ist keine Einreichung). Die Engine liefert
+  // bereits validierte, bereinigte Werte (alle sichtbaren Felder inkl. leer).
+  async function handleDownloadPdf(values: FormValues) {
     try {
       const { generateFlexcoverPdf, flexcoverPdfFilename } = await import("@/lib/pdf");
       const blob = await generateFlexcoverPdf(values);
@@ -249,6 +255,31 @@ function FlexCoverForm({
       toast.success("PDF wurde erstellt und heruntergeladen.");
     } catch {
       toast.error("PDF konnte nicht erstellt werden. Bitte erneut versuchen.");
+    }
+  }
+
+  // „Antrag einreichen" — nur eingeloggt. Protokolliert serverseitig, versendet
+  // das PDF per E-Mail und leitet zur Bestätigungsseite. Bei Fehlern bleibt der
+  // Entwurf erhalten (kein Datenverlust, keine falsche Bestätigung).
+  async function handleEinreichen(values: FormValues) {
+    setSubmitting(true);
+    try {
+      const result = await submitForm(FORM_ID, values);
+      // Erfolg → zur Bestätigungsseite. Den E-Mail-Status übergeben wir per Query,
+      // da er nicht in der DB liegt (kein submitting zurücksetzen, da Navigation).
+      const mail = result.emailSent ? "sent" : "failed";
+      router.push(`/antrag/flexcover/eingereicht/${result.id}?mail=${mail}`);
+    } catch (err) {
+      if (err instanceof SubmitError && err.status === 401) {
+        toast.error("Sitzung abgelaufen — bitte erneut anmelden. Ihr Stand bleibt erhalten.");
+      } else {
+        toast.error(
+          err instanceof Error && err.message
+            ? err.message
+            : "Antrag konnte nicht eingereicht werden. Bitte erneut versuchen.",
+        );
+      }
+      setSubmitting(false);
     }
   }
 
@@ -426,6 +457,31 @@ function FlexCoverForm({
     </div>
   );
 
+  // Anonym: kein „Antrag einreichen", sondern ein Hinweis zur Anmeldung. Der
+  // ausgefüllte Antrag lässt sich trotzdem als PDF herunterladen.
+  const anonHint = (
+    <Alert>
+      <AlertTitle>Zum Einreichen bitte anmelden</AlertTitle>
+      <AlertDescription>
+        Eine verbindliche Einreichung mit Eingangsbestätigung und PDF-Zusendung
+        per E-Mail ist nur mit Konto möglich.{" "}
+        <Link href="/login?returnTo=/antrag/flexcover" className="font-medium underline">
+          Anmelden
+        </Link>{" "}
+        oder{" "}
+        <Link href="/registrieren?returnTo=/antrag/flexcover" className="font-medium underline">
+          registrieren
+        </Link>
+        . Ihren vollständig ausgefüllten Antrag können Sie unten jederzeit als PDF
+        herunterladen.
+      </AlertDescription>
+    </Alert>
+  );
+
+  // Eingeloggt: „Antrag einreichen" ist die primäre Aktion, „PDF herunterladen"
+  // sekundär. Anonym: „PDF herunterladen" ist die einzige (primäre) Aktion.
+  const isAuthed = mode === "server";
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
       <FormEngine
@@ -434,7 +490,29 @@ function FlexCoverForm({
         defaultValues={formValues}
         initialSection={formSection}
         onStateChange={notify}
-        onSubmit={handleSubmit}
+        onSubmit={isAuthed ? handleEinreichen : handleDownloadPdf}
+        submitLabel={
+          isAuthed
+            ? submitting
+              ? "Wird eingereicht…"
+              : "Antrag einreichen"
+            : "PDF herunterladen"
+        }
+        submitDisabled={isAuthed && submitting}
+        secondaryActions={
+          isAuthed
+            ? [
+                {
+                  key: "download",
+                  label: "PDF herunterladen",
+                  variant: "outline",
+                  disabled: submitting,
+                  onAction: handleDownloadPdf,
+                },
+              ]
+            : undefined
+        }
+        actionsNote={isAuthed ? undefined : anonHint}
         header={header}
       />
     </main>

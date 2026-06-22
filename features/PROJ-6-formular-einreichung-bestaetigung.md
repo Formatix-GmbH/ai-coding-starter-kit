@@ -223,7 +223,20 @@ Dieselbe react-pdf-Erzeugung läuft sowohl im Browser (Download) als auch **serv
 
 **Manueller Schritt offen:** `.env.local.example` um `RESEND_API_KEY` und `SUBMISSION_EMAIL_FROM` ergänzen (Deny-Regel auf `.env*` verhindert automatische Bearbeitung).
 
-**Noch nicht gebaut (→ `/frontend PROJ-6`):** „Antrag einreichen"-Button + anonymer Anmelde-Hinweis in der Antragsseite, Bestätigungsseite `/antrag/flexcover/eingereicht/[id]`, Einreichungs-Liste `/antrag/flexcover/eingereicht` (beide Server-Components, lesen per RLS über `getSubmissionRow`/`listSubmissionRows`).
+### Frontend (2026-06-22) — fertig, Build grün
+**Form-Engine (PROJ-3) generisch erweitert** (`src/components/form-engine/FormEngine.tsx`): neue Props `submitLabel`, `submitDisabled`, `secondaryActions` (jede läuft durch dieselbe Validierung + Bereinigung wie der Submit) und `actionsNote`. Rückwärtskompatibel; `runValidatedAction` von Submit + Sekundär-Aktionen geteilt.
+
+**Antragsseite** (`src/components/flexcover/FlexCoverAntrag.tsx`):
+- Eingeloggt: primärer Button **„Antrag einreichen"** (→ `submitForm`, bei Erfolg Redirect auf `/antrag/flexcover/eingereicht/[id]?mail=sent|failed`; Doppelklick-Schutz via `submitDisabled`/„Wird eingereicht…"). Sekundär: **„PDF herunterladen"** (ohne Referenz). 401 → Toast „Sitzung abgelaufen", Entwurf bleibt.
+- Anonym: kein Einreichen-Button, stattdessen **Anmelde-Hinweis** (`actionsNote`, Links zu Login/Registrierung mit `returnTo`); primärer Button = „PDF herunterladen".
+
+**Bestätigungsseite** `src/app/antrag/flexcover/eingereicht/[id]/page.tsx` (Server-Component, owner-only via RLS, Lazy-Guard → freundlicher „nicht gefunden"-Zustand; nicht angemeldet → Redirect Login). Zeigt Referenz, Zeitpunkt, E-Mail-Status (aus `?mail`), Hinweistext. Interaktive Aktionen in `SubmissionConfirmationActions` (Client): PDF-Download (mit Referenz), „E-Mail erneut senden", „Korrigieren / erneut einreichen" (Snapshot → frischer Server-Entwurf via `saveServerDraft`, dann zurück ins Formular), „Neuen Antrag stellen".
+
+**Einreichungs-Liste** `src/app/antrag/flexcover/eingereicht/page.tsx` (Server-Component, nur eigene, neueste zuerst, Lazy-Guard). Pro Eintrag: Referenz, Zeitpunkt, „Ansehen", „PDF herunterladen". Leerzustand mit „Antrag ausfüllen".
+
+**Geteilte Client-Komponente** `DownloadSubmissionPdfButton.tsx` (PDF mit Referenz, clientseitig aus Snapshot).
+
+**Verifiziert:** `tsc` + `eslint` sauber, 108 Unit-Tests grün, `npm run build` erfolgreich (alle Routen kompilieren). **Visuelle/Browser-Abnahme steht noch aus** (→ Nutzer-Review, dann `/qa`).
 
 ## QA Test Results
 _To be added by /qa_

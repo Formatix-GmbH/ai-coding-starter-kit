@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import {
   FormProvider,
   useForm,
@@ -46,6 +46,16 @@ function flattenErrorPaths(errors: FieldErrors, base = ""): string[] {
   return paths;
 }
 
+/** Zusätzliche Aktion neben dem primären Submit. Läuft durch dieselbe
+ *  Validierung + Bereinigung und erhält dann die fertigen Werte. */
+export interface SecondaryAction {
+  key: string;
+  label: string;
+  variant?: ComponentProps<typeof Button>["variant"];
+  disabled?: boolean;
+  onAction: (values: FormValues) => void | Promise<void>;
+}
+
 export interface FormEngineProps {
   definition: FormDefinition;
   registry?: HandlerRegistry;
@@ -59,6 +69,14 @@ export interface FormEngineProps {
   /** Wird bei jeder Werte- oder Abschnittsänderung aufgerufen (für Auto-Save).
    *  Sollte eine stabile Referenz sein. */
   onStateChange?: (values: FormValues, activeSection: string) => void;
+  /** Überschreibt das Label des primären Submit-Buttons (sonst definition.submitLabel). */
+  submitLabel?: string;
+  /** Deaktiviert den primären Submit-Button (z. B. während „Wird eingereicht…"). */
+  submitDisabled?: boolean;
+  /** Weitere Buttons neben dem Submit; jeder läuft durch Validierung + Bereinigung. */
+  secondaryActions?: SecondaryAction[];
+  /** Optionaler Hinweis direkt über der Aktionsleiste (z. B. „Zum Einreichen anmelden"). */
+  actionsNote?: ReactNode;
 }
 
 export function FormEngine({
@@ -69,6 +87,10 @@ export function FormEngine({
   header,
   initialSection,
   onStateChange,
+  submitLabel,
+  submitDisabled,
+  secondaryActions,
+  actionsNote,
 }: FormEngineProps) {
   const methods = useForm<FieldValues>({
     defaultValues: defaultValues as FieldValues,
@@ -82,7 +104,9 @@ export function FormEngine({
     else clearErrors(path);
   };
 
-  const handleSubmit = () => {
+  // Validiert das gesamte Formular und ruft bei Erfolg die Aktion mit den
+  // bereinigten Werten auf. Geteilt von Submit und allen Sekundär-Aktionen.
+  const runValidatedAction = (action: (values: FormValues) => void | Promise<void>) => {
     const values = getValues() as FormValues;
     const errs = validateForm(definition, values, registry);
     clearErrors();
@@ -92,9 +116,10 @@ export function FormEngine({
       toast.error(`Bitte ${paths.length} Eingabe(n) korrigieren.`);
       return;
     }
-    const output = pruneHiddenValues(definition, values);
-    onSubmit?.(output);
+    void action(pruneHiddenValues(definition, values));
   };
+
+  const handleSubmit = () => runValidatedAction((output) => onSubmit?.(output));
 
   const handleReset = () => {
     // Auf ein vollständiges leeres Gerüst zurücksetzen, damit alle registrierten
@@ -160,7 +185,15 @@ export function FormEngine({
             />
           )}
 
-          <FormActions definition={definition} onReset={handleReset} />
+          <FormActions
+            definition={definition}
+            onReset={handleReset}
+            submitLabel={submitLabel}
+            submitDisabled={submitDisabled}
+            secondaryActions={secondaryActions}
+            actionsNote={actionsNote}
+            onRunAction={runValidatedAction}
+          />
         </form>
       </FormProvider>
     </FormEngineProvider>
@@ -302,34 +335,62 @@ function WizardLayout({
 function FormActions({
   definition,
   onReset,
+  submitLabel,
+  submitDisabled,
+  secondaryActions,
+  actionsNote,
+  onRunAction,
 }: {
   definition: FormDefinition;
   onReset: () => void;
+  submitLabel?: string;
+  submitDisabled?: boolean;
+  secondaryActions?: SecondaryAction[];
+  actionsNote?: ReactNode;
+  onRunAction: (action: (values: FormValues) => void | Promise<void>) => void;
 }) {
   return (
-    <div className="mt-6 flex items-center justify-between border-t pt-4">
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button type="button" variant="ghost">
-            {definition.resetLabel ?? "Zurücksetzen"}
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Formular zurücksetzen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Alle Eingaben gehen verloren. Dieser Schritt kann nicht rückgängig
-              gemacht werden.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={onReset}>Zurücksetzen</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+    <div className="mt-6 border-t pt-4">
+      {actionsNote && <div className="mb-4">{actionsNote}</div>}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button type="button" variant="ghost">
+              {definition.resetLabel ?? "Zurücksetzen"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Formular zurücksetzen?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Alle Eingaben gehen verloren. Dieser Schritt kann nicht rückgängig
+                gemacht werden.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction onClick={onReset}>Zurücksetzen</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-      <Button type="submit">{definition.submitLabel ?? "Versenden"}</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {secondaryActions?.map((a) => (
+            <Button
+              key={a.key}
+              type="button"
+              variant={a.variant ?? "outline"}
+              disabled={a.disabled}
+              onClick={() => onRunAction(a.onAction)}
+            >
+              {a.label}
+            </Button>
+          ))}
+          <Button type="submit" disabled={submitDisabled}>
+            {submitLabel ?? definition.submitLabel ?? "Versenden"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
