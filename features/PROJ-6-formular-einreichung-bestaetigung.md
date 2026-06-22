@@ -78,9 +78,10 @@
 - **Browser:** Chrome, Firefox, Safari; responsiv (375/768/1440px).
 
 ## Open Questions
-- [ ] Barcode/QR der Referenznummer im eingereichten PDF: direkt im MVP oder Folgeerweiterung? (Klartext-Referenz ist gesetzt; Format Code128 vs. QR offen — Entscheidung in `/architecture`.)
-- [ ] Konkreter E-Mail-Dienst (z. B. Resend vs. SMTP) und DSGVO-Auftragsverarbeitung — in `/architecture` festzulegen.
-- [ ] URL-Schema der Bestätigungs-/Listenseiten (`/antrag/flexcover/eingereicht/[id]` vs. `/meine-antraege`) — Detailfestlegung in `/architecture`.
+- [x] Barcode/QR der Referenznummer: **gelöst** — nur Klartext-Referenz in der Fußzeile (kein Barcode im MVP).
+- [x] E-Mail-Dienst: **gelöst** — Resend (EU-Region); AVV mit Resend ist vor Produktivnutzung abzuschließen.
+- [x] URL-Schema: **gelöst** — `/antrag/flexcover/eingereicht` (Liste) und `/antrag/flexcover/eingereicht/[id]` (Bestätigung).
+- [ ] Vor Produktivbetrieb: AVV mit Resend abschließen und Absender-Domain (SPF/DKIM) verifizieren — operative Aufgabe für `/deploy`.
 
 ## Decision Log
 
@@ -103,13 +104,102 @@
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
-| _To be added by /architecture_ | | |
+| Neue Tabelle `submissions` (Snapshot, kein PDF), RLS owner-only | Spiegelt das bewährte `form_drafts`-Muster; PDF ist aus Snapshot reproduzierbar → Datenminimierung | 2026-06-22 |
+| 30-Tage-Aufbewahrung via pg_cron + Lazy-Guard | Identisches, erprobtes Muster wie bei Entwürfen; korrekt auch ohne laufenden Job | 2026-06-22 |
+| Referenznummer serverseitig vergeben, Format `FC-<Jahr>-<Zufall>`, menschenlesbar + eindeutig | Server ist die einzige verlässliche Quelle; Klartext genügt (kein Barcode im MVP) | 2026-06-22 |
+| PDF serverseitig aus Snapshot erzeugen (gleiche react-pdf-Grenze, Node) für den E-Mail-Anhang | Kein PDF speichern, kein PDF-Upload vom Client; identisches PDF an allen Stellen | 2026-06-22 |
+| PDF-Grenze um optionalen Referenz-Parameter erweitern | Unterscheidet eingereichtes PDF (mit Referenz) vom reinen Download (ohne) ohne zweite Erzeugungslogik | 2026-06-22 |
+| Einreichen als `POST /api/submissions/[formId]`; Bestätigung/Liste als Server-Components (kein Lese-API) | Konsistent mit bestehender Antragsseite, die Entwürfe serverseitig per RLS liest | 2026-06-22 |
+| E-Mail-Dienst Resend (EU-Region), Versand synchron best-effort | EU-Datenhaltung + AVV, geringster Integrationsaufwand; kein Queue im MVP nötig | 2026-06-22 |
+| E-Mail-Versand entkoppelt vom Einreichungserfolg (best-effort + „erneut senden") | Eine protokollierte Einreichung darf nicht an einem Mail-Fehler scheitern | 2026-06-22 |
+| Neue Secrets `RESEND_API_KEY`, `SUBMISSION_EMAIL_FROM` (kein NEXT_PUBLIC) | Server-seitiger Versand; Secrets nie im Browser exponieren | 2026-06-22 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Überblick
+Einreichen ist ein **angemeldeter** Vorgang. Beim Klick auf „Antrag einreichen" schickt das Formular die bereits validierten, bereinigten Werte an eine neue Server-Schnittstelle. Der Server vergibt eine **Referenznummer**, legt einen **Einreichungs-Datensatz** an (nur die Daten, kein PDF), **erzeugt das PDF serverseitig** und **versendet es per E-Mail** (best-effort). Danach wird der Nutzer auf eine **Bestätigungsseite** geleitet, die das PDF erneut zum Download anbietet. Eine schlichte **Einreichungs-Liste** zeigt eigene Einreichungen. Anonyme Nutzer sehen statt „Einreichen" einen Hinweis zur Anmeldung — der bestehende „PDF herunterladen"-Button bleibt für alle erhalten.
+
+### A) Komponenten- & Seitenstruktur
+```
+Antragsseite  /antrag/flexcover                (bestehend, erweitert)
+├── FormEngine (bestehend)
+├── „PDF herunterladen"        → vollständiges PDF OHNE Referenz (bestehend, bleibt)
+├── eingeloggt:  „Antrag einreichen"-Button
+│      └── beim Klick: deaktiviert + „Wird eingereicht…"  → ruft Einreichungs-Schnittstelle
+└── anonym:      Hinweisbox „Zum Einreichen bitte anmelden oder registrieren" (Link zu Login/Registrierung)
+
+Bestätigungsseite  /antrag/flexcover/eingereicht/[id]   (neu, Server-Component, nur eigene)
+├── Eingangsbestätigung + Einreichungszeitpunkt + Referenznummer
+├── E-Mail-Status:  „Kopie an <E-Mail> gesendet"  ODER  Hinweis + „E-Mail erneut senden"
+├── „PDF herunterladen" (erzeugt dasselbe eingereichte PDF MIT Referenz)
+├── „Neuen Antrag stellen"
+└── „Korrigieren / erneut einreichen"  → erzeugt aus dem Snapshot einen frischen Entwurf
+
+Einreichungs-Liste  /antrag/flexcover/eingereicht        (neu, Server-Component, nur eigene)
+├── Liste: Zeitpunkt · Referenz · Link zur Bestätigung · „PDF herunterladen"   (neueste zuerst)
+└── Leerzustand: „Sie haben noch keinen Antrag eingereicht" + Button „Antrag ausfüllen"
+```
+
+Die Bestätigungs- und Listenseite lesen ihre Daten — wie die bestehende Antragsseite die Entwürfe — **direkt serverseitig über die Datenbank mit owner-only-Zugriff (RLS)**. Es braucht dafür keine zusätzlichen Lese-Schnittstellen.
+
+### B) Datenmodell (Klartext)
+Neue Tabelle **„Einreichungen" (`submissions`)**, eine Zeile je Einreichung:
+- **ID** — eindeutig, wird in der URL der Bestätigungsseite verwendet
+- **Besitzer** — der einreichende (angemeldete) Nutzer
+- **Formular-ID** — welches Formular eingereicht wurde (hier: FlexCover)
+- **Referenznummer** — menschenlesbar, z. B. `FC-2026-A1B2C3` (Jahr + kurzer Zufallsteil), eindeutig
+- **Daten-Snapshot** — die eingereichten, bereinigten Werte (dieselben, die ins PDF fließen). **Kein PDF gespeichert** — es ist daraus jederzeit identisch reproduzierbar (Datenminimierung).
+- **Eingereicht am** — Zeitstempel
+
+Eigenschaften:
+- **RLS owner-only** (jeder sieht/liest nur eigene Einreichungen) — wie bei den Entwürfen.
+- **Aufbewahrung 30 Tage**, dann automatische Löschung per Hintergrund-Job (pg_cron), plus „Lazy-Guard": abgelaufene Einreichungen werden beim Aufruf nicht mehr angezeigt — analog zum bestehenden Entwurfs-Muster.
+- Mehrere Einreichungen pro Nutzer/Formular sind erlaubt (Wiedereinreichung nach Korrektur = eigener neuer Eintrag).
+
+### C) Ablauf beim Einreichen (Reihenfolge = Fehlersicherheit)
+1. **Validierung** (Formular-Engine, clientseitig) — bei Fehlern: Sprung zum ersten Fehler, kein Server-Aufruf.
+2. Werte an die **Einreichungs-Schnittstelle** senden (POST). Diese prüft Anmeldung erneut und validiert die Werte serverseitig (Zod) — Sicherheit nicht nur clientseitig.
+3. **Referenznummer vergeben** und **Einreichungs-Datensatz speichern** → das ist der „erfolgreich eingereicht"-Moment.
+4. **PDF serverseitig erzeugen** (aus dem Snapshot, mit Referenz) und **per E-Mail versenden** — *best-effort*: scheitert das, bleibt die Einreichung gültig; der E-Mail-Status wird vermerkt.
+5. **Server-Entwurf leeren** (best-effort) — der Antrag ist abgeschlossen.
+6. Antwort an den Client mit ID + Referenz → Weiterleitung zur **Bestätigungsseite**.
+
+Geht Schritt 2/3 schief (Netz, Session abgelaufen): Einreichung gilt als **nicht erfolgreich**, Entwurf bleibt erhalten, der Nutzer kann erneut einreichen (bei abgelaufener Session: Hinweis zum erneuten Anmelden).
+
+### D) PDF & Referenznummer
+Die bestehende **austauschbare PDF-Grenze** (`generateFlexcoverPdf`) wird um einen **optionalen Referenz-Parameter** erweitert:
+- **„PDF herunterladen"** (ohne Einreichen): ohne Referenz → keine Fußzeilen-Referenz.
+- **Eingereichtes PDF** (E-Mail-Anhang serverseitig + Download auf der Bestätigungsseite): mit Referenz → kleine Klartext-Referenz in der Fußzeile.
+
+Dieselbe react-pdf-Erzeugung läuft sowohl im Browser (Download) als auch **serverseitig** (für den E-Mail-Anhang, über die vorhandene Node-Fähigkeit von react-pdf). Damit bleibt das PDF an beiden Stellen identisch, ohne das PDF irgendwo zu speichern oder vom Client hochzuladen.
+
+### E) Schnittstellen (neu)
+- **Einreichen** (`POST /api/submissions/[formId]`): Anmeldung + Zod-Validierung + Größenlimit (wie bei Entwürfen), legt Einreichung an, erzeugt PDF, versendet E-Mail (best-effort), leert Entwurf, liefert ID + Referenz.
+- **E-Mail erneut senden** (`POST /api/submissions/[id]/resend`): owner-only; erzeugt das PDF erneut aus dem Snapshot und versendet es. Best-effort, kein PII in Fehlerantworten.
+- Bestätigungs- und Listenseite brauchen **keine** eigenen Lese-Schnittstellen (Server-Components lesen direkt per RLS).
+
+### F) E-Mail-Versand
+- **Resend (EU-Region)** als Transaktions-Mail-Dienst; API-Key als Secret (Server-seitig, nie im Browser). AVV mit Resend erforderlich (DSGVO).
+- Versand **synchron im Einreichen-Request** (best-effort) — kein Queue/Job-System im MVP nötig.
+- Inhalt: kurze Bestätigung + Referenz + **PDF als Anhang**. Empfänger ist die eigene Konto-E-Mail des Nutzers (PII geht nur an die betroffene Person selbst).
+- Fehler werden nur als technischer Status geloggt — **kein PII in Logs/Fehlermeldungen**.
+
+### G) Nach der Einreichung
+- **Entwurf-Leeren:** Server-Entwurf wird entfernt, lokaler Entwurf geleert → kein Auto-Save mehr auf dem abgeschlossenen Antrag.
+- **„Korrigieren / erneut einreichen":** aus dem gespeicherten Snapshot wird ein **frischer Entwurf** erzeugt (der Nutzer landet wieder im Formular mit seinen Werten); eine erneute Einreichung ist ein eigener neuer Eintrag.
+- **„Neuen Antrag stellen":** startet ein leeres Formular.
+
+### H) Dependencies (zu installieren)
+- **`resend`** — offizielles SDK des E-Mail-Dienstes (Server-seitiger Versand mit Anhang).
+- Keine weitere Bibliothek nötig (PDF, Validierung, Supabase, RLS-Muster sind bereits vorhanden). **Kein** QR-/Barcode-Paket (Klartext-Referenz gewählt).
+
+### I) Neue Umgebungsvariablen (in `.env.local.example` dokumentieren)
+- `RESEND_API_KEY` — Secret für den E-Mail-Versand (nur Server).
+- `SUBMISSION_EMAIL_FROM` — Absenderadresse (verifizierte Domain bei Resend).
+(Beide ohne `NEXT_PUBLIC_`-Präfix — niemals im Browser.)
 
 ## QA Test Results
 _To be added by /qa_
