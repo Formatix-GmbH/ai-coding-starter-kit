@@ -5,6 +5,7 @@
 // neuen Antrag starten.
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,9 @@ export function SubmissionConfirmationActions({
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/antrag/flexcover")}>
           Neuen Antrag stellen
+        </Button>
+        <Button asChild type="button" variant="ghost">
+          <Link href="/antrag/flexcover/eingereicht">Meine Einreichungen</Link>
         </Button>
       </div>
     </div>
