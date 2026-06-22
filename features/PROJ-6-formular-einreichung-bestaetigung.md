@@ -1,6 +1,6 @@
 # PROJ-6: Formular-Einreichung & Bestätigung
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-06-22
 **Last Updated:** 2026-06-22
 
@@ -178,7 +178,7 @@ Dieselbe react-pdf-Erzeugung läuft sowohl im Browser (Download) als auch **serv
 
 ### E) Schnittstellen (neu)
 - **Einreichen** (`POST /api/submissions/[formId]`): Anmeldung + Zod-Validierung + Größenlimit (wie bei Entwürfen), legt Einreichung an, erzeugt PDF, versendet E-Mail (best-effort), leert Entwurf, liefert ID + Referenz.
-- **E-Mail erneut senden** (`POST /api/submissions/[id]/resend`): owner-only; erzeugt das PDF erneut aus dem Snapshot und versendet es. Best-effort, kein PII in Fehlerantworten.
+- **E-Mail erneut senden** (`POST /api/submissions/[formId]/[submissionId]/resend`): owner-only; erzeugt das PDF erneut aus dem Snapshot und versendet es. Best-effort, kein PII in Fehlerantworten.
 - Bestätigungs- und Listenseite brauchen **keine** eigenen Lese-Schnittstellen (Server-Components lesen direkt per RLS).
 
 ### F) E-Mail-Versand
@@ -200,6 +200,30 @@ Dieselbe react-pdf-Erzeugung läuft sowohl im Browser (Download) als auch **serv
 - `RESEND_API_KEY` — Secret für den E-Mail-Versand (nur Server).
 - `SUBMISSION_EMAIL_FROM` — Absenderadresse (verifizierte Domain bei Resend).
 (Beide ohne `NEXT_PUBLIC_`-Präfix — niemals im Browser.)
+
+## Implementation Notes
+
+### Backend (2026-06-22) — fertig, getestet
+**Datenbank** (`supabase/migrations/`):
+- `20260622120000_submissions.sql` — Tabelle `submissions` (id, user_id, form_id, reference unique, data jsonb, submitted_at). RLS owner-only: nur `select_own` + `insert_own` (bewusst keine update/delete-Policy — Einreichungen sind unveränderlich; Löschen nur über den Aufbewahrungs-Job). GRANT select/insert nur an `authenticated`. Indizes `(user_id, submitted_at desc)` und `(submitted_at)`.
+- `20260622120100_submissions_retention.sql` — pg_cron-Job `delete-stale-submissions` (täglich 03:00 UTC, > 30 Tage).
+- **Status:** Migrationsdateien erstellt; Anwendung auf DEV per Supabase-MCP **noch offen** (MCP-Token war abgelaufen) — nachzuholen, danach Security-Advisors prüfen.
+
+**Lib-Schicht** (`src/lib/submissions/`): `types.ts`, `constants.ts` (30 Tage, 1 MB), `expiry.ts` (Lazy-Guard), `reference.ts` (`FC-<Jahr>-<6 Zeichen>`, Alphabet ohne 0/O/1/I/L), `store.ts` (insert mit Referenz-Retry bei Kollision, get, list), `client.ts` (`submitForm`, `resendSubmissionEmail`, `SubmitError` mit Status).
+
+**E-Mail** (`src/lib/email/resend.ts`): `sendSubmissionEmail` über Resend, best-effort (wirft nie, liefert boolean), kein PII in Logs.
+
+**PDF** (`src/lib/pdf/`): `index.ts` `generateFlexcoverPdf(values, reference?)` + `flexcoverPdfFilename(date, reference?)`; neues `server.ts` `renderFlexcoverPdfBuffer(values, reference?)` (Node: Arimo per Dateipfad, Header als Data-URL, `renderToBuffer`); `flexcover/document.tsx` um `reference?`-Prop + Fußzeilen-Referenz erweitert.
+
+**API** (`src/app/api/submissions/`): `[formId]/route.ts` POST (Auth → Zod → Größenlimit → protokollieren → PDF+E-Mail best-effort → Entwurf leeren), `[formId]/[submissionId]/resend/route.ts` POST (owner-only, Lazy-Guard 404, best-effort). Beide `runtime = "nodejs"`.
+
+**Tests:** Integrationstests beider Routen (Auth/Validierung/413/Best-effort-Pfade), Unit-Test Referenz-Generator, Node-Test serverseitiges PDF inkl. Referenz. Gesamt **108 Unit-Tests grün**, tsc + eslint sauber. (Timeout der react-pdf-Node-Tests auf 60s erhöht — Kaltstart unter Last.)
+
+**Dependency:** `resend` ^6.x installiert.
+
+**Manueller Schritt offen:** `.env.local.example` um `RESEND_API_KEY` und `SUBMISSION_EMAIL_FROM` ergänzen (Deny-Regel auf `.env*` verhindert automatische Bearbeitung).
+
+**Noch nicht gebaut (→ `/frontend PROJ-6`):** „Antrag einreichen"-Button + anonymer Anmelde-Hinweis in der Antragsseite, Bestätigungsseite `/antrag/flexcover/eingereicht/[id]`, Einreichungs-Liste `/antrag/flexcover/eingereicht` (beide Server-Components, lesen per RLS über `getSubmissionRow`/`listSubmissionRows`).
 
 ## QA Test Results
 _To be added by /qa_

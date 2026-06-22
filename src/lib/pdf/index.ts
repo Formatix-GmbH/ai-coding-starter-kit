@@ -19,13 +19,20 @@ Font.register({
 });
 
 /** Erzeugt das FlexCover-Antrags-PDF aus den (bereits validierten und bereinigten)
- *  Formularwerten und liefert es als Blob. */
-export async function generateFlexcoverPdf(values: FormValues): Promise<Blob> {
-  const element = createElement(FlexcoverDocument, { values }) as ReactElement<DocumentProps>;
+ *  Formularwerten und liefert es als Blob. `reference` (optional, PROJ-6) druckt
+ *  die Referenznummer einer Einreichung in die Fußzeile; ohne sie bleibt es das
+ *  reine „PDF herunterladen" ohne Referenz. */
+export async function generateFlexcoverPdf(
+  values: FormValues,
+  reference?: string,
+): Promise<Blob> {
+  const element = createElement(FlexcoverDocument, { values, reference }) as ReactElement<DocumentProps>;
   return pdf(element).toBlob();
 }
 
-/** Sprechender Dateiname mit Datum, z. B. flexcover-antrag-2026-06-19.pdf. */
-export function flexcoverPdfFilename(date = new Date()): string {
+/** Sprechender Dateiname. Mit Referenz: flexcover-antrag-FC-2026-A1B2C3.pdf,
+ *  sonst datiert: flexcover-antrag-2026-06-22.pdf. */
+export function flexcoverPdfFilename(date = new Date(), reference?: string): string {
+  if (reference) return `flexcover-antrag-${reference}.pdf`;
   return `flexcover-antrag-${date.toISOString().slice(0, 10)}.pdf`;
 }

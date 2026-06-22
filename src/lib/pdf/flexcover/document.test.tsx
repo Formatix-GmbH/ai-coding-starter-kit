@@ -29,8 +29,9 @@ async function render(values: FormValues): Promise<Buffer> {
 const isPdf = (b: Buffer) => b.subarray(0, 5).toString("latin1") === "%PDF-";
 
 // react-pdf renderToBuffer hat im Node-Kaltstart (fontkit/yoga) eine längere
-// Initialzeit → großzügiges Timeout je Test.
-const TIMEOUT = 30000;
+// Initialzeit; der erste (schwerste) Render kann unter Last >30s brauchen →
+// großzügiges Timeout je Test.
+const TIMEOUT = 60000;
 
 describe("FlexcoverDocument (PDF-Erzeugung)", () => {
   test("erzeugt ein gültiges, nicht-triviales PDF aus vollständigen Daten", async () => {

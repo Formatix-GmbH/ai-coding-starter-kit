@@ -250,9 +250,13 @@ const BEREICHE = [
 export function FlexcoverDocument({
   values,
   headerSrc = "/pdf/flexcover-header.png",
+  reference,
 }: {
   values: FormValues;
   headerSrc?: string;
+  /** Referenznummer einer Einreichung (PROJ-6). Wenn gesetzt, erscheint sie
+   *  dezent in der Fußzeile; beim reinen „PDF herunterladen" bleibt sie leer. */
+  reference?: string;
 }) {
   const get: Getter = (path) => getByPath(values, path);
   const has = (path: string) => get(path) !== undefined;
@@ -490,9 +494,13 @@ export function FlexcoverDocument({
           </View>
         </View>
 
-        {/* Fußzeile: links Formularkennung, rechts Seitenzahl + blaues Schmuckquadrat. */}
+        {/* Fußzeile: links Formularkennung (+ ggf. Referenznummer der Einreichung),
+            rechts Seitenzahl + blaues Schmuckquadrat. */}
         <View style={styles.footer} fixed>
-          <Text>flex&cover – Förderantrag</Text>
+          <Text>
+            flex&cover – Förderantrag
+            {reference ? `   ·   Referenz ${reference}` : ""}
+          </Text>
           <View style={styles.footerRight}>
             <Text render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
             <View style={styles.footerSquare} />
