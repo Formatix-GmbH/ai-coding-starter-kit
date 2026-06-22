@@ -18,8 +18,8 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger�
 | P0 (MVP) | FlexCover Formulardefinition (Beispielformular auf der Engine) | Planned |
 | P0 (MVP) | Formular-Entwurf & Auto-Save | Planned |
 | P0 (MVP) | PDF-Generierung & Download | Planned |
-| P0 (MVP) | Formular-Einreichung & Bestätigung | Roadmap |
-| P1 | PDF-Versand per E-Mail | Roadmap |
+| P0 (MVP) | Formular-Einreichung & Bestätigung (inkl. Bestätigungs-E-Mail mit PDF) | Planned |
+| P1 | PDF-Versand per E-Mail | Obsolet — in PROJ-6 zusammengeführt |
 | P1 | KI-gestützte Formularausfüllung | Roadmap |
 | P1 | Admin Dashboard (Antragsübersicht) | Roadmap |
 | P1 | Datei-Upload & Unterschrift (Engine-Erweiterung) | Roadmap |
