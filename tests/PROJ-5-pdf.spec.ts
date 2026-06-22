@@ -22,7 +22,7 @@ test("gültiger Antrag erzeugt einen PDF-Download (anonym, clientseitig)", async
 
   // Absenden → Download abfangen
   const downloadPromise = page.waitForEvent("download", { timeout: 20000 });
-  await page.getByRole("button", { name: /Antrag absenden/ }).click();
+  await page.getByRole("button", { name: "PDF herunterladen" }).click();
   const download = await downloadPromise;
 
   // Dateiname + echtes PDF
@@ -41,7 +41,7 @@ test("unvollständiger Antrag erzeugt kein PDF und zeigt Validierungsfehler", as
     downloadStarted = true;
   });
 
-  await page.getByRole("button", { name: /Antrag absenden/ }).click();
+  await page.getByRole("button", { name: "PDF herunterladen" }).click();
 
   // Validierungs-Hinweis erscheint, kein Erfolgs-Toast
   await expect(page.getByText(/korrigieren/)).toBeVisible();

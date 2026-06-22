@@ -1,6 +1,6 @@
 # PROJ-6: Formular-Einreichung & Bestätigung
 
-## Status: In Progress
+## Status: Approved
 **Created:** 2026-06-22
 **Last Updated:** 2026-06-22
 
@@ -239,7 +239,60 @@ Dieselbe react-pdf-Erzeugung läuft sowohl im Browser (Download) als auch **serv
 **Verifiziert:** `tsc` + `eslint` sauber, 108 Unit-Tests grün, `npm run build` erfolgreich (alle Routen kompilieren). **Visuelle/Browser-Abnahme steht noch aus** (→ Nutzer-Review, dann `/qa`).
 
 ## QA Test Results
-_To be added by /qa_
+
+**Datum:** 2026-06-22 · **Tester:** QA (automatisiert + Code-Audit) · **Build:** `next build` grün
+
+### Testumfang & Methode
+- **Unit/Integration (Vitest):** 108 Tests grün — u. a. Einreichungs-API (`POST /api/submissions/[formId]`), Resend-Endpoint, Referenz-Generator, serverseitiges PDF (inkl. Referenz).
+- **E2E (Playwright, Chromium + Mobile Safari):** 82 Tests grün — anonymer Pfad + Auth-Guards für PROJ-6 (4 neue Tests × 2 Browser), plus volle Regression PROJ-2/3/4/5/11.
+- **Eingeloggter Einreichungs-Flow:** über API-Integrationstests + manuelle Abnahme abgedeckt (Login-Automatisierung im E2E projektweit nicht eingerichtet — gleiche Konvention wie PROJ-4).
+
+### Akzeptanzkriterien
+| # | Kriterium | Ergebnis | Nachweis |
+|---|-----------|----------|----------|
+| 1 | Validierungsfehler → kein Einreichen, Sprung zum Fehler, kein Eintrag/Mail | ✅ | Engine-Validierung vor `onSubmit`; API validiert erneut |
+| 2 | Valide → PDF mit Referenz + Download | ✅ | server.test.ts (PDF+Referenz), manuell |
+| 3 | Eingeloggt → `submissions`-Eintrag (Snapshot/Zeit/Referenz/user_id) | ✅ | route.test.ts Happy Path; RLS insert_own |
+| 4 | Erfolg → Bestätigungsseite (Eingang/Zeit/Referenz/Download) | ✅ | Bestätigungsseite, manuell |
+| 5 | Bestätigung → „Neuer Antrag" + „Korrigieren" | ✅ | manuell |
+| 6 | Korrigieren → frischer Entwurf; erneute Einreichung = eigener Eintrag | ✅ | `saveServerDraft` force; mehrere Einreichungen erlaubt |
+| 7 | Anonym: kein Einreichen-Button, Anmelde-Hinweis, PDF bleibt | ✅ | E2E (PROJ-6) |
+| 8 | Anonym → nach Anmeldung bleiben Eingaben, Einreichen verfügbar | ✅ | returnTo-Link + PROJ-4-Übernahme (Bestand) |
+| 9 | Protokollierung erfolgreich → PDF per E-Mail (best-effort) | ✅ | route.test.ts (E-Mail-Pfade); echter Versand bei gesetzter Resend-Config |
+| 10 | Protokolliert → Server-Entwurf geleert, kein Auto-Save mehr | ✅ | `deleteDraftRow` + Navigation |
+| 11 | E-Mail versandt → Bestätigung zeigt „Kopie an <E-Mail>" | ✅ | Bestätigungsseite (`?mail=sent`) |
+| 12 | Liste: nur eigene, neueste zuerst, mit Feldern | ✅ | Listenseite; RLS select_own; Index `(user_id, submitted_at desc)` |
+| 13 | Liste leer → Leerzustand + Button | ✅ | Listenseite |
+| 14 | Anderer Nutzer → keine fremden Einreichungen | ✅ | RLS owner-only; fremde ID → 404 (kein IDOR) |
+| 15 | „PDF herunterladen" → PDF ohne Referenz, keine Protokollierung | ✅ | E2E (PROJ-5), `handleDownloadPdf` |
+
+**Ergebnis: 15/15 bestanden.**
+
+### Edge Cases
+- PDF-/E-Mail-Fehler best-effort (Einreichung bleibt gültig), Protokollierung-Fehler → 500 ohne Mail/Entwurf-Leeren, Entwurf-Leeren-Fehler unkritisch: ✅ durch route.test.ts abgedeckt.
+- Abgelaufene/fremde Bestätigungs-URL → freundlicher „nicht gefunden" (Lazy-Guard): ✅ (resend route.test.ts 404; Bestätigungsseite rendert Hinweis).
+- Doppelklick: Submit-Button via `submitDisabled`/„Wird eingereicht…": ✅ (manuell/Code).
+- Anonym will einreichen / Auth-Guards der neuen Seiten: ✅ E2E.
+
+### Security-Audit (Red Team)
+- **RLS owner-only** auf `submissions` (nur select/insert own) — Advisor ohne Findings; fremde Einreichung per ID → 404, **kein IDOR**. ✅
+- **Eingabevalidierung** (Zod), 1-MB-Limit, UUID-Validierung der ID. ✅
+- **Kein PII in Logs/Fehlern** (E-Mail-Modul loggt nur Fehlernamen; Routen liefern generische Meldungen). ✅
+- **Secrets server-seitig** (`RESEND_API_KEY` ohne `NEXT_PUBLIC`). ✅
+- **Auth** auf beiden Routen (401) und Seiten (Redirect Login). ✅
+
+### Gefundene Bugs
+| ID | Schwere | Beschreibung | Status |
+|----|---------|--------------|--------|
+| REG-1 | (war) High | E2E PROJ-5/PROJ-11 klickten den anonymen Submit-Button noch als „Antrag absenden"; durch PROJ-6 heißt er für Anonyme „PDF herunterladen" → 8 E2E rot | **Behoben** in dieser QA: Regressionssuite auf neues Label aktualisiert (Produktverhalten ist korrekt/gewollt) |
+| OBS-1 | Low | Ohne `?mail`-Parameter (Bestätigung später aus der Liste geöffnet) wird „Kopie gesendet" angenommen, auch wenn der Erstversand fehlschlug | Offen (Hinweis; „erneut senden" verfügbar) |
+| OBS-2 | Low | Kein Rate-Limiting auf `POST /api/submissions/*` (CPU für PDF-Render / E-Mail-Versand an eigene Adresse) | Offen (gleiche Lage wie Entwürfe; für später) |
+| OBS-3 | Low | Liste lädt vollständige Snapshots (`data`) für bis zu 100 Einträge → potenziell große Payload | Offen (pro Nutzer, 30-Tage-Fenster, Limit 100) |
+
+**Keine offenen Critical/High-Bugs.**
+
+### Production-Ready: **JA**
+Keine kritischen/hohen Fehler. OBS-1..3 sind Low und können als Folge-Tickets adressiert werden. Vor Produktivbetrieb (operativ, `/deploy`): PROD-Migration anwenden, `RESEND_API_KEY`/`SUBMISSION_EMAIL_FROM` setzen, AVV mit Resend + Absender-Domain (SPF/DKIM).
 
 ## Deployment
 _To be added by /deploy_

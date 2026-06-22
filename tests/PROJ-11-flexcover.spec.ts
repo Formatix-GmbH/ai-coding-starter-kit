@@ -121,7 +121,7 @@ test("dynamische Tabelle: Einkauf nach Ländern – Zeile hinzufügen", async ({
 });
 
 test("Validierung: leeres Absenden zeigt Pflichtfehler + Toast + Tab-Fehlerzähler", async ({ page }) => {
-  await page.getByRole("button", { name: /Antrag absenden/ }).click();
+  await page.getByRole("button", { name: "PDF herunterladen" }).click();
   await expect(page.getByText(/korrigieren/)).toBeVisible();
   // Aktiver Tab Ansprechpartner zeigt Pflichtfeld-Meldungen
   await expect(page.getByText("Pflichtfeld").first()).toBeVisible();
@@ -151,7 +151,7 @@ test("ausgeblendetes Detailfeld blockiert die Abgabe nicht", async ({ page }) =>
   await fillStable(byId(page, "SitzUndBedeutung.anzahlStandorteAusland"), "0");
   await fillStable(byId(page, "SitzUndBedeutung.eignerstruktur"), "GmbH, alleiniger Gesellschafter");
 
-  await page.getByRole("button", { name: /Antrag absenden/ }).click();
+  await page.getByRole("button", { name: "PDF herunterladen" }).click();
   // PROJ-5: gültiger Antrag erzeugt das PDF (Download) und meldet Erfolg.
   await expect(page.getByText(/PDF wurde erstellt|heruntergeladen/)).toBeVisible({ timeout: 15000 });
 });
