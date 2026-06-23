@@ -1,0 +1,39 @@
+# PROJ-14: App-Stack für den Hetzner Cloud Server.
+# Nur zwei Dienste: die Next.js-App und Caddy als Reverse-Proxy/TLS.
+# DB/Auth = Supabase (extern, kein DB-Container). Variablen kommen aus ./.env
+# (docker compose liest .env automatisch für Substitution + env_file).
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        # Öffentliche Werte (zur Buildzeit in den Client inlined).
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    restart: unless-stopped
+    # Laufzeit-Env (inkl. Secrets: RESEND_API_KEY, SUBMISSION_EMAIL_FROM und die
+    # NEXT_PUBLIC_* auch serverseitig). Liegt nur auf dem Server, nicht im Repo.
+    env_file:
+      - .env
+    expose:
+      - "3000"
+    # Bewusst kein `ports:` — die App ist nur über Caddy erreichbar.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:

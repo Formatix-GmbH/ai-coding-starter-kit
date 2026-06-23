@@ -33,7 +33,7 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger�
 - Keine personenbezogenen Daten landen in Logs, Fehlermeldungen oder Monitoring-Tools
 
 ## Constraints
-- **Deployment:** Hetzner Managed Server (nicht Vercel) — Docker oder Node.js direkt
+- **Deployment:** Hybrid (nicht Vercel). App läuft per **Docker Compose auf einem separaten Hetzner Cloud Server** (Ubuntu, Root) — der Hetzner **Managed Server (FreeBSD, kein Root/Docker)** kann Docker strukturell nicht betreiben und bleibt für Domain/DNS/Mail. DB/Auth = Supabase (extern). Public über `flexcover.eforms.de` hinter **Cloudflare** (Proxy, TLS Full strict + Origin-Cert). Siehe PROJ-14.
 - **Team:** Solo-Entwickler mit KI-Unterstützung, kein festes Timeline-Commitment
 - **DSGVO:** Pflicht ab Tag 1 — Datenminimierung, kein PII in Logs, Trennung Dev/Test/Prod, DSGVO-Folgenabschätzung vor KI-Integration
 - **Design:** Tailwind CSS + shadcn/ui Defaults

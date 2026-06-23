@@ -28,10 +28,11 @@
 | PROJ-10 | Multi-Form / Multi-Mandanten-Verwaltung | Roadmap | — | 2026-06-16 |
 | PROJ-12 | Datei-Upload & Unterschrift (Engine-Erweiterung) | Roadmap | — | 2026-06-18 |
 | PROJ-13 | Externe Übermittlung / Webhook (Absende-Ziele) | Roadmap | — | 2026-06-18 |
+| PROJ-14 | Deployment & Infrastruktur (Hetzner Cloud + Cloudflare) | In Progress | [PROJ-14](PROJ-14-deployment-infrastruktur.md) | 2026-06-22 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-14
+## Next Available ID: PROJ-15
 
 ## Empfohlene Build-Reihenfolge
 PROJ-1 → PROJ-2 → **PROJ-3 (Engine)** → **PROJ-11 (FlexCover-Definition)** → PROJ-4 → PROJ-5 → PROJ-6 → P1/P2

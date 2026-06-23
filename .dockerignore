@@ -1,0 +1,21 @@
+# PROJ-14: nur das ins Build-Context aufnehmen, was der Build braucht.
+node_modules
+.next
+.git
+.github
+.claude
+.vscode
+tests
+playwright-report
+test-results
+supabase
+docs
+caddy/certs
+*.md
+.env
+.env.*
+npm-debug.log*
+Dockerfile
+.dockerignore
+docker-compose.yml
+Caddyfile

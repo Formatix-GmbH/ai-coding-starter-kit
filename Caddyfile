@@ -1,0 +1,25 @@
+# PROJ-14: Caddy als Reverse-Proxy/TLS vor der Next.js-App.
+#
+# Cloudflare proxyt flexcover.eforms.de (SSL-Modus „Full (strict)"). Caddy liefert
+# das Cloudflare ORIGIN CERTIFICATE aus (Cloudflare↔Origin verschlüsselt + geprüft).
+# Damit ist KEIN Let's Encrypt nötig. Die Cert-Dateien liegen unter ./caddy/certs/
+# (nur auf dem Server, nicht im Repo).
+
+flexcover.eforms.de {
+	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin-key.pem
+
+	encode zstd gzip
+
+	# Echte Client-IP hinter Cloudflare wiederherstellen (für Logs/Rate-Limiting).
+	# Cloudflare-IP-Ranges siehe https://www.cloudflare.com/ips/
+	# (bei Bedarf mit `trusted_proxies` + aktuellen Ranges ergänzen.)
+
+	reverse_proxy app:3000
+}
+
+# --- Alternative OHNE Cloudflare (direktes Let's Encrypt) ---
+# Dann obigen tls-Eintrag entfernen und stattdessen eine E-Mail für ACME setzen:
+#   flexcover.eforms.de {
+#       reverse_proxy app:3000
+#   }
+# (Caddy holt das Zertifikat automatisch; Port 80/443 müssen erreichbar sein.)
