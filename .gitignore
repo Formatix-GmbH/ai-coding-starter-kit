@@ -34,6 +34,10 @@ yarn-error.log*
 .env
 /caddy/certs/
 
+# Schlüssel-/Zertifikatsdateien nie einchecken
+*.key
+*.pem
+
 # vercel
 .vercel
 
