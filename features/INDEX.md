@@ -21,14 +21,14 @@
 | PROJ-11 | FlexCover Formulardefinition (Beispielformular auf der Engine) | Approved | [PROJ-11](PROJ-11-flexcover-form-definition.md) | 2026-06-18 |
 | PROJ-4 | Formular-Entwurf & Auto-Save | Approved | [PROJ-4](PROJ-4-formular-entwurf-auto-save.md) | 2026-06-16 |
 | PROJ-5 | PDF-Generierung & Download | Approved | [PROJ-5](PROJ-5-pdf-generierung-download.md) | 2026-06-16 |
-| PROJ-6 | Formular-Einreichung & Bestätigung | Approved | [PROJ-6](PROJ-6-formular-einreichung-bestaetigung.md) | 2026-06-22 |
+| PROJ-6 | Formular-Einreichung & Bestätigung | Deployed | [PROJ-6](PROJ-6-formular-einreichung-bestaetigung.md) | 2026-06-22 |
 | PROJ-7 | PDF-Versand per E-Mail | Obsolet (→ PROJ-6) | — | 2026-06-16 |
 | PROJ-8 | KI-gestützte Formularausfüllung | Roadmap | — | 2026-06-16 |
 | PROJ-9 | Admin Dashboard | Roadmap | — | 2026-06-16 |
 | PROJ-10 | Multi-Form / Multi-Mandanten-Verwaltung | Roadmap | — | 2026-06-16 |
 | PROJ-12 | Datei-Upload & Unterschrift (Engine-Erweiterung) | Roadmap | — | 2026-06-18 |
 | PROJ-13 | Externe Übermittlung / Webhook (Absende-Ziele) | Roadmap | — | 2026-06-18 |
-| PROJ-14 | Deployment & Infrastruktur (Hetzner Cloud + Cloudflare) | In Progress | [PROJ-14](PROJ-14-deployment-infrastruktur.md) | 2026-06-22 |
+| PROJ-14 | Deployment & Infrastruktur (Hetzner Cloud + Cloudflare) | Deployed | [PROJ-14](PROJ-14-deployment-infrastruktur.md) | 2026-06-22 |
 
 <!-- Add features above this line -->
 

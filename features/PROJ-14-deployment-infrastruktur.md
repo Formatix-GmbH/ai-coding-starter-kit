@@ -1,8 +1,8 @@
 # PROJ-14: Deployment & Infrastruktur (Hetzner Cloud + Cloudflare)
 
-## Status: In Progress
+## Status: Deployed
 **Created:** 2026-06-22
-**Last Updated:** 2026-06-22
+**Last Updated:** 2026-06-24
 
 ## Dependencies
 - Requires: PROJ-1 (Supabase) — externe DB/Auth, bleibt bestehen
@@ -92,4 +92,19 @@ Die ursprüngliche PRD-Vorgabe „Hetzner Managed Server — Docker oder Node.js
 - [ ] Rate-Limiting an der Cloudflare-Edge für die Einreichungs-Routen (PROJ-6/OBS-2)?
 
 ## Deployment
+
+**Live seit 2026-06-24:** `https://flexcover.eforms.de` (HTTP 200, TLS Full strict via Cloudflare Origin-Cert, Security-Header aktiv). Pfad: Browser → Cloudflare → Traefik → Next.js-App → Supabase (EU).
+
+**Was final umgesetzt wurde:**
+- Hetzner Cloud Server `89.167.76.178` (Ubuntu 24.04, Docker 29.6.0), App `/opt/flexcover` (deploy-User), Stack via `docker compose`.
+- Traefik (`/opt/apps/traefik`) terminiert TLS mit dem Cloudflare-Origin-Cert (`*.eforms.de`) über den **File-Provider**.
+- **Routing über den File-Provider statt Docker-Labels** (`/opt/apps/traefik/dynamic/flexcover.yml`): Route `Host(flexcover.eforms.de)` → `http://flexcover-app-1:3000` im Netz `proxy`.
+- PROD-Supabase: `form_drafts` + `submissions` (RLS, Retention) angewandt.
+
+**Bekannte offene Punkte / Risiken:**
+- ⚠️ **Traefik Docker-Provider defekt:** Docker 29 (min API 1.40) lehnt Traefiks Client-Version (1.24) ab; `DOCKER_API_VERSION`-Env half nicht. Deshalb File-Provider-Workaround. Folge: label-basierte Auto-Discovery funktioniert (noch) nicht; Docker-Provider spammt Fehler ins Log. Optionen: Docker downgraden, Traefik-Update abwarten, oder dauerhaft File-Provider nutzen.
+- ⚠️ **Resend-Key rotieren:** `resendApi.txt` war versehentlich kurz im Repo (develop+main) → als kompromittiert behandeln, in Resend neu erzeugen. (Aus Repo-Tip + Server entfernt; bleibt in der Git-History.)
+- **GitHub-Actions-Secrets** noch nicht gesetzt → Auto-Deploy bei `main`-Push erst danach aktiv (erstes Deploy erfolgte manuell).
+- **Resend** noch nicht konfiguriert (`.env` `RESEND_API_KEY` leer) → E-Mail-Versand best-effort inaktiv; App sonst voll funktionsfähig.
+
 _Runbook in `docs/production/deployment-hetzner-cloudflare.md`._
