@@ -1,5 +1,7 @@
 # Deployment-Runbook — Hetzner Cloud + Cloudflare (PROJ-14)
 
+> **Update 2026-06-24 — Reverse-Proxy:** Auf dem Cloud Server läuft bereits ein zentraler **Traefik** (`/opt/apps/traefik`, v3.4, Docker-Provider, externes Netz `proxy`). Die App wird **dort eingehängt** (Traefik-Labels in `docker-compose.yml`), **kein eigenes Caddy**. TLS macht Traefik mit dem **Cloudflare-Origin-Zertifikat** über einen File-Provider (`/opt/apps/traefik/dynamic/tls.yml`, Certs unter `/opt/apps/traefik/certs/`). Die Caddy-Abschnitte unten sind damit hinfällig; sonst gilt das Runbook unverändert.
+
 Zielarchitektur (Hybrid):
 - **Hetzner Cloud Server** (Ubuntu 24.04, ≥ CX22, Root) → Docker Compose: **Next.js-App + Caddy**.
 - **DB/Auth:** Supabase (extern, EU) — kein DB-Container.

@@ -57,8 +57,7 @@ Die ursprüngliche PRD-Vorgabe „Hetzner Managed Server — Docker oder Node.js
 - `next.config.ts` → `output: "standalone"` + Security-Header
 - `Dockerfile` (multi-stage, kopiert `public/` + `.next/static`)
 - `.dockerignore`
-- `docker-compose.yml` (app + caddy)
-- `Caddyfile` (Origin-Cert, reverse_proxy → app:3000)
+- `docker-compose.yml` (App-Service mit **Traefik-Labels**, externes Netz `proxy`)
 - `.github/workflows/deploy.yml` (SSH-Deploy auf push:main + manuell)
 - `docs/production/deployment-hetzner-cloudflare.md` (Runbook + benötigte Env/Secrets)
 
@@ -85,6 +84,7 @@ Die ursprüngliche PRD-Vorgabe „Hetzner Managed Server — Docker oder Node.js
 | `flexcover.eforms.de` hinter Cloudflare, Full (strict) + Origin-Cert | Edge-TLS/DDoS/WAF; Origin-Cert vermeidet ACME-Fummelei hinter Proxy | 2026-06-22 |
 | Deploy via GitHub Actions → SSH → compose up --build | Einfach, nachvollziehbar; kein Registry nötig | 2026-06-22 |
 | `output: "standalone"` + `public/` explizit ins Image | Schlankes Image; serverseitiges PDF braucht Fonts/Banner aus public/ | 2026-06-22 |
+| **Bundled Caddy verworfen → vorhandenen Traefik nutzen** | Auf dem Cloud Server lief bereits ein zentraler Traefik (v3.4, Docker-Provider, LE) auf 80/443. App wird per Traefik-Labels am externen Netz `proxy` eingehängt; TLS via Cloudflare-**Origin-Cert** in Traefiks File-Provider (kein ACME hinter Cloudflare nötig). | 2026-06-24 |
 
 ## Open Questions
 - [ ] AVV mit Cloudflare + EU-Data-Localization final klären (DSGVO).

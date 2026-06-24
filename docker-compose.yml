@@ -1,7 +1,7 @@
-# PROJ-14: App-Stack für den Hetzner Cloud Server.
-# Nur zwei Dienste: die Next.js-App und Caddy als Reverse-Proxy/TLS.
-# DB/Auth = Supabase (extern, kein DB-Container). Variablen kommen aus ./.env
-# (docker compose liest .env automatisch für Substitution + env_file).
+# PROJ-14: App-Service hinter dem vorhandenen Traefik-Reverse-Proxy.
+# Traefik (separates Projekt /opt/apps/traefik) terminiert TLS mit dem
+# Cloudflare-Origin-Zertifikat und routet flexcover.eforms.de → app:3000 über das
+# externe Docker-Netz `proxy`. DB/Auth = Supabase (extern). Variablen aus ./.env.
 
 services:
   app:
@@ -12,28 +12,20 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     restart: unless-stopped
-    # Laufzeit-Env (inkl. Secrets: RESEND_API_KEY, SUBMISSION_EMAIL_FROM und die
-    # NEXT_PUBLIC_* auch serverseitig). Liegt nur auf dem Server, nicht im Repo.
+    # Laufzeit-Env (inkl. Secrets: RESEND_API_KEY, SUBMISSION_EMAIL_FROM). Nur Server.
     env_file:
       - .env
-    expose:
-      - "3000"
-    # Bewusst kein `ports:` — die App ist nur über Caddy erreichbar.
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.flexcover.rule=Host(`flexcover.eforms.de`)"
+      - "traefik.http.routers.flexcover.entrypoints=websecure"
+      - "traefik.http.routers.flexcover.tls=true"
+      - "traefik.http.services.flexcover.loadbalancer.server.port=3000"
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./caddy/certs:/etc/caddy/certs:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - app
-
-volumes:
-  caddy_data:
-  caddy_config:
+# Traefik liegt im externen Netz `proxy` (von dessen Compose-Projekt erstellt).
+networks:
+  proxy:
+    external: true
