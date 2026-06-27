@@ -29,10 +29,11 @@
 | PROJ-12 | Datei-Upload & Unterschrift (Engine-Erweiterung) | Roadmap | — | 2026-06-18 |
 | PROJ-13 | Externe Übermittlung / Webhook (Absende-Ziele) | Roadmap | — | 2026-06-18 |
 | PROJ-14 | Deployment & Infrastruktur (Hetzner Cloud + Cloudflare) | Deployed | [PROJ-14](PROJ-14-deployment-infrastruktur.md) | 2026-06-22 |
+| PROJ-15 | Staging-Umgebung | Architected | [PROJ-15](PROJ-15-staging-umgebung.md) | 2026-06-24 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-15
+## Next Available ID: PROJ-16
 
 ## Empfohlene Build-Reihenfolge
 PROJ-1 → PROJ-2 → **PROJ-3 (Engine)** → **PROJ-11 (FlexCover-Definition)** → PROJ-4 → PROJ-5 → PROJ-6 → P1/P2
