@@ -103,8 +103,9 @@ Die ursprüngliche PRD-Vorgabe „Hetzner Managed Server — Docker oder Node.js
 
 **Bekannte offene Punkte / Risiken:**
 - ⚠️ **Traefik Docker-Provider defekt:** Docker 29 (min API 1.40) lehnt Traefiks Client-Version (1.24) ab; `DOCKER_API_VERSION`-Env half nicht. Deshalb File-Provider-Workaround. Folge: label-basierte Auto-Discovery funktioniert (noch) nicht; Docker-Provider spammt Fehler ins Log. Optionen: Docker downgraden, Traefik-Update abwarten, oder dauerhaft File-Provider nutzen.
-- ⚠️ **Resend-Key rotieren:** `resendApi.txt` war versehentlich kurz im Repo (develop+main) → als kompromittiert behandeln, in Resend neu erzeugen. (Aus Repo-Tip + Server entfernt; bleibt in der Git-History.)
-- **GitHub-Actions-Secrets** noch nicht gesetzt → Auto-Deploy bei `main`-Push erst danach aktiv (erstes Deploy erfolgte manuell).
-- **Resend** noch nicht konfiguriert (`.env` `RESEND_API_KEY` leer) → E-Mail-Versand best-effort inaktiv; App sonst voll funktionsfähig.
+- ✅ **Resend-Key rotiert** (war via `resendApi.txt` kurz im Repo). Aus Repo-Tip + Server entfernt; bleibt in der Git-History.
+- ✅ **GitHub-Actions-Secrets gesetzt** (`DEPLOY_HOST/USER/SSH_KEY`) → Auto-Deploy aktiv (main→Prod, develop→Staging), end-to-end getestet.
+- ✅ **Resend konfiguriert + getestet:** Absender `antrag@eforms.de`, Domain `eforms.de` in Resend verifiziert; Versand-Test HTTP 200. E-Mail-Versand produktiv.
+- ⚠️ **Traefik Docker-Provider** weiterhin via File-Provider umgangen (Docker 29 API-Inkompatibilität) — siehe oben.
 
 _Runbook in `docs/production/deployment-hetzner-cloudflare.md`._
