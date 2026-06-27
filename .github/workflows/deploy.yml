@@ -4,7 +4,7 @@
 #   DEPLOY_HOST     – IP/Hostname des Cloud Servers
 #   DEPLOY_USER     – SSH-Benutzer (z. B. deploy)
 #   DEPLOY_SSH_KEY  – privater SSH-Key (PEM) mit Zugang
-#   DEPLOY_PATH     – Pfad des geklonten Repos auf dem Server (z. B. /opt/flexcover)
+# Der Prod-Pfad /opt/flexcover ist fest hinterlegt (kein Secret nötig).
 
 name: Deploy
 
@@ -29,7 +29,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd "${{ secrets.DEPLOY_PATH }}"
+            cd /opt/flexcover
             git pull --ff-only
             docker compose up -d --build
             docker image prune -f
