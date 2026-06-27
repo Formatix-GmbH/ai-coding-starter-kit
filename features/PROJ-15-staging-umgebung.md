@@ -1,6 +1,6 @@
 # PROJ-15: Staging-Umgebung
 
-## Status: Architected
+## Status: Deployed
 **Created:** 2026-06-24
 **Last Updated:** 2026-06-24
 
@@ -86,4 +86,16 @@ Cloudflare (Proxy, Full strict)
 - [ ] Server-RAM beobachten; ggf. CX32, falls parallele Builds zu eng.
 
 ## Deployment
-_Wird beim Aufbau ergänzt (analog PROJ-14)._
+
+**Live seit 2026-06-24:** `https://flexcover-staging.eforms.de` (Basic-Auth `eulerhermes`, hinter Cloudflare, TLS via Origin-Cert). Ohne Auth 401, mit Auth 200, `X-Robots-Tag: noindex` aktiv. Nutzt **`flexCover-dev`**, E-Mail aus.
+
+**Umgesetzt:**
+- `/opt/flexcover-staging` (Repo-Klon Branch `develop`), eigenes `.env` (Dev-Supabase, `RESEND_API_KEY` leer), Compose-Projekt `flexcover-staging` → Container `flexcover-staging-app-1` am Netz `proxy`.
+- Traefik-Route `/opt/apps/traefik/dynamic/flexcover-staging.yml` (File-Provider): Host-Regel → `http://flexcover-staging-app-1:3000`, Default-Cert, Middlewares **basicAuth** (apr1-Hash) + **noindex**.
+- Cloudflare A-Record `flexcover-staging` → Server-IP (proxied).
+- Auto-Deploy-Workflow `.github/workflows/deploy-staging.yml` (Trigger `push: develop`).
+
+**Offen:**
+- **GitHub-Secrets** (`DEPLOY_HOST/USER/SSH_KEY`) noch nicht gesetzt → Auto-Deploy (Staging **und** Prod) erst danach aktiv; erste Deploys erfolgten manuell.
+- Basic-Auth-Passwort ist bewusst schwach (`123xyz`) → bei Bedarf rotieren (apr1-Hash in `dynamic/flexcover-staging.yml`).
+- RAM auf CX22 beobachten (zwei Apps + Builds).
