@@ -21,7 +21,7 @@ const NAVY = "#1b365d";
 const LINE = "#9aa3ad";
 const MARGIN = 14.17; // 0,5 cm Seitenrand für Kopf-Banner/Balken
 const BANNER_W = 595.28 - 2 * MARGIN; // A4-Breite minus 2× 0,5 cm
-const BANNER_H = (BANNER_W * 220) / 1466; // Banner-Seitenverhältnis (≈85 pt)
+const BANNER_H = (BANNER_W * 242) / 1466; // Banner-Seitenverhältnis (Bild 1466×242)
 
 const styles = StyleSheet.create({
   page: {
