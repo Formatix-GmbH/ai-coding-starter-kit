@@ -15,7 +15,7 @@ import { MAX_SUBMISSION_BYTES } from "@/lib/submissions/constants";
 import { submissionPayloadSchema } from "@/lib/validation/submission";
 import { formIdSchema } from "@/lib/validation/draft";
 import { renderFlexcoverPdfBuffer } from "@/lib/pdf/server";
-import { flexcoverPdfFilename } from "@/lib/pdf";
+import { flexcoverPdfFilename } from "@/lib/pdf/filename";
 import { sendSubmissionEmail } from "@/lib/email/resend";
 import type { FormValues } from "@/lib/form-engine/types";
 

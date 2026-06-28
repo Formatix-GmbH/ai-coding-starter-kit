@@ -30,9 +30,6 @@ export async function generateFlexcoverPdf(
   return pdf(element).toBlob();
 }
 
-/** Sprechender Dateiname. Mit Referenz: flexcover-antrag-FC-2026-A1B2C3.pdf,
- *  sonst datiert: flexcover-antrag-2026-06-22.pdf. */
-export function flexcoverPdfFilename(date = new Date(), reference?: string): string {
-  if (reference) return `flexcover-antrag-${reference}.pdf`;
-  return `flexcover-antrag-${date.toISOString().slice(0, 10)}.pdf`;
-}
+// Dateiname-Helfer kommt aus dem seiteneffektfreien Modul (server-sicher); hier
+// re-exportiert, damit Browser-Aufrufer ihn weiter aus "@/lib/pdf" beziehen können.
+export { flexcoverPdfFilename } from "./filename";

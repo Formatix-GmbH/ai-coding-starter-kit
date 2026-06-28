@@ -8,7 +8,7 @@ import { getSubmissionRow } from "@/lib/submissions/store";
 import { isSubmissionExpired } from "@/lib/submissions/expiry";
 import { submissionIdSchema } from "@/lib/validation/submission";
 import { renderFlexcoverPdfBuffer } from "@/lib/pdf/server";
-import { flexcoverPdfFilename } from "@/lib/pdf";
+import { flexcoverPdfFilename } from "@/lib/pdf/filename";
 import { sendSubmissionEmail } from "@/lib/email/resend";
 
 export const runtime = "nodejs";
