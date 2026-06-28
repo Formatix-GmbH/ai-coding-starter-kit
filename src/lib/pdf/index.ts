@@ -2,6 +2,12 @@
 // MVP-Adapter = @react-pdf/renderer (clientseitig). Ein späterer Wechsel auf
 // Chromium/iText tauscht nur die Implementierung dieser Funktion — Aufrufer und
 // Datenvertrag (bereinigte, XSD-konforme Engine-Werte) bleiben unverändert.
+//
+// ⚠️ NUR im Browser importieren! Dieses Modul registriert beim Import die Arimo-
+// Schrift mit einem BROWSER-URL-Pfad (`/pdf/fonts/…`). Im Node-/Server-Kontext
+// versucht react-pdf, diese URL als Dateipfad zu öffnen → ENOENT (PROJ-6-Prod-Bug).
+// Serverseitig stattdessen `@/lib/pdf/server` (Render) und `@/lib/pdf/filename`
+// (reiner Helfer, ohne Font-Seiteneffekt) verwenden.
 
 import { pdf, Font, type DocumentProps } from "@react-pdf/renderer";
 import { createElement, type ReactElement } from "react";
