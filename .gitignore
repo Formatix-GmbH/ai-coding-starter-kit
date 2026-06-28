@@ -51,3 +51,7 @@ next-env.d.ts
 
 # Lokale Notizen mit Secrets nie einchecken
 resendApi.txt
+
+# Weitere lokale Secret-Notizen
+*.key.txt
+ToDos.txt
