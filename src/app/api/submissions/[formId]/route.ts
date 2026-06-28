@@ -17,6 +17,7 @@ import { formIdSchema } from "@/lib/validation/draft";
 import { renderFlexcoverPdfBuffer } from "@/lib/pdf/server";
 import { flexcoverPdfFilename } from "@/lib/pdf/filename";
 import { sendSubmissionEmail } from "@/lib/email/resend";
+import { verifyTurnstile, clientIpFromHeaders } from "@/lib/turnstile/verify";
 import type { FormValues } from "@/lib/form-engine/types";
 
 // react-pdf/fontkit benötigt die Node-Laufzeit (nicht Edge).
@@ -51,6 +52,15 @@ export async function POST(req: NextRequest, { params }: Params) {
       { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
       { status: 400 },
     );
+  }
+
+  // PROJ-16: Bot-Schutz — Turnstile-Token serverseitig prüfen (vor Protokollierung).
+  const turnstileOk = await verifyTurnstile(
+    parsed.data.turnstileToken,
+    clientIpFromHeaders(req.headers),
+  );
+  if (!turnstileOk) {
+    return NextResponse.json({ error: "Bot-Schutz fehlgeschlagen. Bitte erneut versuchen." }, { status: 400 });
   }
 
   const values = parsed.data.data as FormValues;

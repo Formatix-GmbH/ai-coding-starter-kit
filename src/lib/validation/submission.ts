@@ -6,6 +6,8 @@ import { z } from "zod";
  *  da die Engine beliebige Formulardefinitionen tragen kann (wie beim Entwurf). */
 export const submissionPayloadSchema = z.object({
   data: z.record(z.string(), z.unknown()),
+  // PROJ-16: Cloudflare-Turnstile-Token (serverseitig verifiziert).
+  turnstileToken: z.string().optional(),
 });
 
 /** Einreichungs-ID (Pfadparameter). */

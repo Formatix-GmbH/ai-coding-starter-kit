@@ -22,12 +22,17 @@ vi.mock("@/lib/pdf/server", () => ({
 vi.mock("@/lib/email/resend", () => ({
   sendSubmissionEmail: vi.fn(async () => true),
 }));
+vi.mock("@/lib/turnstile/verify", () => ({
+  verifyTurnstile: vi.fn(async () => true),
+  clientIpFromHeaders: vi.fn(() => null),
+}));
 
 import { POST } from "./route";
 import * as store from "@/lib/submissions/store";
 import * as drafts from "@/lib/drafts/store";
 import * as pdf from "@/lib/pdf/server";
 import * as email from "@/lib/email/resend";
+import * as turnstile from "@/lib/turnstile/verify";
 import type { SubmissionRow } from "@/lib/submissions/types";
 
 const USER = { id: "user-1", email: "antrag@firma.de" };
@@ -62,6 +67,7 @@ beforeEach(() => {
   vi.mocked(drafts.deleteDraftRow).mockResolvedValue(undefined);
   vi.mocked(pdf.renderFlexcoverPdfBuffer).mockResolvedValue(Buffer.from("%PDF-fake"));
   vi.mocked(email.sendSubmissionEmail).mockResolvedValue(true);
+  vi.mocked(turnstile.verifyTurnstile).mockResolvedValue(true);
 });
 
 describe("POST /api/submissions/[formId]", () => {
@@ -79,6 +85,13 @@ describe("POST /api/submissions/[formId]", () => {
 
   it("400 bei ungültigem Body (data fehlt)", async () => {
     const res = await POST(postReq({ foo: "bar" }), params());
+    expect(res.status).toBe(400);
+    expect(store.insertSubmissionRow).not.toHaveBeenCalled();
+  });
+
+  it("400 bei fehlgeschlagenem Bot-Schutz (Turnstile) — keine Protokollierung", async () => {
+    vi.mocked(turnstile.verifyTurnstile).mockResolvedValue(false);
+    const res = await POST(postReq({ data: { a: 1 }, turnstileToken: "bad" }), params());
     expect(res.status).toBe(400);
     expect(store.insertSubmissionRow).not.toHaveBeenCalled();
   });

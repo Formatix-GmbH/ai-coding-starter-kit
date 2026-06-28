@@ -8,6 +8,8 @@ import { toast } from "sonner";
 
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 import { loginAction } from "@/lib/actions/auth";
+import { TurnstileWidget } from "@/components/turnstile/TurnstileWidget";
+import { turnstileEnabled } from "@/lib/turnstile/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,10 +23,17 @@ import {
 
 export function LoginForm({ returnTo }: { returnTo?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  function resetCaptcha() {
+    setCaptchaToken("");
+    setCaptchaKey((k) => k + 1); // Widget neu laden → frischer (Einmal-)Token
+  }
 
   async function onSubmit(values: LoginInput) {
     setIsSubmitting(true);
@@ -33,6 +42,7 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
       fd.set("email", values.email);
       fd.set("password", values.password);
       if (returnTo) fd.set("returnTo", returnTo);
+      fd.set("turnstileToken", captchaToken);
       const result = await loginAction(fd);
       if (result.ok && result.redirectTo) {
         // Voll-Navigation, damit die neue Sitzung serverseitig greift.
@@ -41,6 +51,7 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
       }
       toast.error(result.message ?? "Anmeldung fehlgeschlagen.");
       form.resetField("password");
+      resetCaptcha();
     } finally {
       setIsSubmitting(false);
     }
@@ -83,7 +94,12 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isSubmitting || (turnstileEnabled && !captchaToken)}
+        >
           {isSubmitting ? "Wird angemeldet…" : "Anmelden"}
         </Button>
         <p className="text-center text-sm text-muted-foreground">

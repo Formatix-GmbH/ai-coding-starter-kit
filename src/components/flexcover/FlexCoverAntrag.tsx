@@ -16,6 +16,8 @@ import {
   type LocalDraft,
 } from "@/lib/drafts/client";
 import { useDraftAutosave } from "@/hooks/useDraftAutosave";
+import { TurnstileWidget } from "@/components/turnstile/TurnstileWidget";
+import { turnstileEnabled } from "@/lib/turnstile/config";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -236,6 +238,8 @@ function FlexCoverForm({
   const [formKey, setFormKey] = useState(0);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   // „PDF herunterladen" — für alle Nutzer. Erzeugung clientseitig (PII bleibt
   // lokal), ohne Referenznummer (es ist keine Einreichung). Die Engine liefert
@@ -264,7 +268,7 @@ function FlexCoverForm({
   async function handleEinreichen(values: FormValues) {
     setSubmitting(true);
     try {
-      const result = await submitForm(FORM_ID, values);
+      const result = await submitForm(FORM_ID, values, captchaToken);
       // Erfolg → zur Bestätigungsseite. Den E-Mail-Status übergeben wir per Query,
       // da er nicht in der DB liegt (kein submitting zurücksetzen, da Navigation).
       const mail = result.emailSent ? "sent" : "failed";
@@ -279,6 +283,9 @@ function FlexCoverForm({
             : "Antrag konnte nicht eingereicht werden. Bitte erneut versuchen.",
         );
       }
+      // Turnstile-Token ist verbraucht → Widget neu laden für einen erneuten Versuch.
+      setCaptchaToken("");
+      setCaptchaKey((k) => k + 1);
       setSubmitting(false);
     }
   }
@@ -482,6 +489,20 @@ function FlexCoverForm({
   // sekundär. Anonym: „PDF herunterladen" ist die einzige (primäre) Aktion.
   const isAuthed = mode === "server";
 
+  // Bot-Schutz (PROJ-16) nur für die eingeloggte Einreichung.
+  const einreichCaptcha = turnstileEnabled ? (
+    <div className="space-y-1.5">
+      <p className="text-xs text-muted-foreground">
+        Bitte bestätigen Sie kurz, dass Sie kein Roboter sind, um den Antrag einzureichen.
+      </p>
+      <TurnstileWidget
+        key={captchaKey}
+        onToken={setCaptchaToken}
+        onExpire={() => setCaptchaToken("")}
+      />
+    </div>
+  ) : undefined;
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
       <FormEngine
@@ -498,7 +519,7 @@ function FlexCoverForm({
               : "Antrag einreichen"
             : "PDF herunterladen"
         }
-        submitDisabled={isAuthed && submitting}
+        submitDisabled={isAuthed && (submitting || (turnstileEnabled && !captchaToken))}
         secondaryActions={
           isAuthed
             ? [
@@ -512,7 +533,7 @@ function FlexCoverForm({
               ]
             : undefined
         }
-        actionsNote={isAuthed ? undefined : anonHint}
+        actionsNote={isAuthed ? einreichCaptcha : anonHint}
         header={header}
       />
     </main>

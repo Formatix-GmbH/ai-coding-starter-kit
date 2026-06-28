@@ -15,12 +15,17 @@ export class SubmitError extends Error {
 }
 
 /** Reicht den (validierten, bereinigten) Formularstand ein. Wirft `SubmitError`
- *  bei nicht erfolgreicher Einreichung — der Aufrufer hält dann den Entwurf. */
-export async function submitForm(formId: string, data: FormValues): Promise<SubmitResult> {
+ *  bei nicht erfolgreicher Einreichung — der Aufrufer hält dann den Entwurf.
+ *  `turnstileToken` (PROJ-16) wird serverseitig gegen Cloudflare verifiziert. */
+export async function submitForm(
+  formId: string,
+  data: FormValues,
+  turnstileToken?: string,
+): Promise<SubmitResult> {
   const res = await fetch(`/api/submissions/${encodeURIComponent(formId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data }),
+    body: JSON.stringify({ data, turnstileToken }),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

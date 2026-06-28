@@ -11,6 +11,7 @@ services:
         # Öffentliche Werte (zur Buildzeit in den Client inlined).
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     restart: unless-stopped
     # Laufzeit-Env (inkl. Secrets: RESEND_API_KEY, SUBMISSION_EMAIL_FROM). Nur Server.
     env_file:

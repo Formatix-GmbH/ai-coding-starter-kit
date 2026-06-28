@@ -8,6 +8,8 @@ import { toast } from "sonner";
 
 import { registerSchema, type RegisterInput } from "@/lib/validation/auth";
 import { registerAction } from "@/lib/actions/auth";
+import { TurnstileWidget } from "@/components/turnstile/TurnstileWidget";
+import { turnstileEnabled } from "@/lib/turnstile/config";
 import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +25,8 @@ import {
 
 export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -44,6 +48,7 @@ export function RegisterForm() {
       fd.set("email", values.email);
       fd.set("password", values.password);
       fd.set("consent", String(values.consent));
+      fd.set("turnstileToken", captchaToken);
       const result = await registerAction(fd);
       if (result.ok) {
         toast.success(
@@ -51,6 +56,8 @@ export function RegisterForm() {
         );
       } else {
         toast.error(result.message ?? "Registrierung fehlgeschlagen.");
+        setCaptchaToken("");
+        setCaptchaKey((k) => k + 1);
       }
     } finally {
       setIsSubmitting(false);
@@ -138,7 +145,12 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isSubmitting || (turnstileEnabled && !captchaToken)}
+        >
           {isSubmitting ? "Wird erstellt…" : "Konto erstellen"}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
