@@ -81,7 +81,12 @@ export async function POST(req: NextRequest, { params }: Params) {
         filename: flexcoverPdfFilename(new Date(), submission.reference),
       });
     }
-  } catch {
+  } catch (err) {
+    // Best-effort, aber Ursache protokollieren (technischer Fehler, kein PII).
+    console.error(
+      "[submissions] PDF/E-Mail-Schritt fehlgeschlagen:",
+      err instanceof Error ? (err.stack ?? err.message) : String(err),
+    );
     emailSent = false;
   }
 

@@ -55,7 +55,11 @@ export async function POST(_req: NextRequest, { params }: Params) {
       pdf,
       filename: flexcoverPdfFilename(new Date(), submission.reference),
     });
-  } catch {
+  } catch (err) {
+    console.error(
+      "[submissions] Resend PDF/E-Mail-Schritt fehlgeschlagen:",
+      err instanceof Error ? (err.stack ?? err.message) : String(err),
+    );
     emailSent = false;
   }
 
