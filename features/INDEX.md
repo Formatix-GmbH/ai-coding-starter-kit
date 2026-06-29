@@ -31,10 +31,11 @@
 | PROJ-14 | Deployment & Infrastruktur (Hetzner Cloud + Cloudflare) | Deployed | [PROJ-14](PROJ-14-deployment-infrastruktur.md) | 2026-06-22 |
 | PROJ-15 | Staging-Umgebung | Deployed | [PROJ-15](PROJ-15-staging-umgebung.md) | 2026-06-24 |
 | PROJ-16 | Bot-Schutz mit Cloudflare Turnstile | Deployed | [PROJ-16](PROJ-16-turnstile-botschutz.md) | 2026-06-28 |
+| PROJ-17 | Barrierefreiheit (WCAG 2.1 AA) | Planned | [PROJ-17](PROJ-17-barrierefreiheit-wcag.md) | 2026-06-29 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-17
+## Next Available ID: PROJ-18
 
 ## Empfohlene Build-Reihenfolge
 PROJ-1 → PROJ-2 → **PROJ-3 (Engine)** → **PROJ-11 (FlexCover-Definition)** → PROJ-4 → PROJ-5 → PROJ-6 → P1/P2
