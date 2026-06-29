@@ -30,7 +30,7 @@
 | PROJ-13 | Externe Übermittlung / Webhook (Absende-Ziele) | Roadmap | — | 2026-06-18 |
 | PROJ-14 | Deployment & Infrastruktur (Hetzner Cloud + Cloudflare) | Deployed | [PROJ-14](PROJ-14-deployment-infrastruktur.md) | 2026-06-22 |
 | PROJ-15 | Staging-Umgebung | Deployed | [PROJ-15](PROJ-15-staging-umgebung.md) | 2026-06-24 |
-| PROJ-16 | Bot-Schutz mit Cloudflare Turnstile | Planned | [PROJ-16](PROJ-16-turnstile-botschutz.md) | 2026-06-28 |
+| PROJ-16 | Bot-Schutz mit Cloudflare Turnstile | Deployed | [PROJ-16](PROJ-16-turnstile-botschutz.md) | 2026-06-28 |
 
 <!-- Add features above this line -->
 

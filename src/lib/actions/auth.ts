@@ -69,8 +69,6 @@ export async function registerAction(formData: FormData): Promise<ActionResult> 
   // Kein User-Enumeration: bei bereits existierender E-Mail liefert Supabase
   // (mit aktivierter Bestätigung) keinen Fehler. Echte Fehler neutral melden.
   if (error) {
-    // TEMP-Debug (PROJ-16): exakte Supabase-Fehlermeldung loggen.
-    console.error("[register-debug] supabase:", error.status, error.message);
     if (isCaptchaError(error.message)) return { ok: false, message: TURNSTILE_FAIL };
     return { ok: false, message: "Registrierung fehlgeschlagen. Bitte später erneut versuchen." };
   }

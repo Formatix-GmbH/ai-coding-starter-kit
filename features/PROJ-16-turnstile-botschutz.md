@@ -1,8 +1,8 @@
 # PROJ-16: Bot-Schutz mit Cloudflare Turnstile
 
-## Status: Planned
+## Status: Deployed
 **Created:** 2026-06-28
-**Last Updated:** 2026-06-28
+**Last Updated:** 2026-06-29
 
 ## Dependencies
 - Requires: PROJ-2 (User Authentication) — Turnstile auf Registrierung/Login/Passwort-Reset
@@ -74,4 +74,19 @@ _Siehe „Architektur" oben (kompakt) — bei Bedarf via /architecture vertiefen
 _To be added by /qa_
 
 ## Deployment
-_To be added by /deploy_
+
+**Live seit 2026-06-29** auf Prod + Staging.
+
+**Umgesetzt:**
+- `<TurnstileWidget>` (`src/components/turnstile/`) auf Registrierung, Login, Passwort-vergessen und Antrag-Einreichung; Submit erst nach Token, Token-Reset nach jedem Versuch.
+- **Auth-Formulare:** Token wird an `supabase.auth.*` als `options.captchaToken` durchgereicht → **Supabase verifiziert** (natives Turnstile-Captcha, schützt die Auth-Endpoints direkt, auch gegen Direktaufrufe der anon-API). `auth.ts` prüft den Token NICHT selbst (Einmal-Token).
+- **Einreichung:** eigener `siteverify` in `POST /api/submissions/[formId]` (`src/lib/turnstile/verify.ts`) vor der Protokollierung.
+- Env: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (Build-Arg, beide .env) + `TURNSTILE_SECRET_KEY` (Server-Runtime, für die Einreichungs-Verify). Beide auf Prod + Staging gesetzt.
+
+**Konfig-Voraussetzungen (gelernt beim Rollout):**
+- **Supabase-Captcha** in **beiden** Projekten (DEV + PROD) aktiviert, Provider **Turnstile**, **Secret Key = genau der des Widgets** (Site Key `0x4AAAAAADsTIdQ…`). Ein falscher Secret → `invalid-input-secret`.
+- **Turnstile-Hostnames:** `eforms.de` reicht — deckt automatisch alle Subdomains (Prod **und** Staging) ab.
+- **Supabase-Auth-SMTP-Absender** muss auf der in Resend verifizierten Domain liegen (`@eforms.de`); ein alter `@formatix.de`-Absender → `500: Error sending confirmation email`.
+- **Turnstile-Verify ist „rollout-sicher":** ohne gesetztes Secret deaktiviert (App bleibt nutzbar).
+
+**Offen / Hinweis:** `.env.local.example` noch um beide Variablen ergänzen (Deny-Regel verhindert automatische Bearbeitung). AVV mit Cloudflare (Turnstile) ist Teil des bestehenden Cloudflare-AVV.
