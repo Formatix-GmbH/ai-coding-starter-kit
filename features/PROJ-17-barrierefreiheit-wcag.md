@@ -91,7 +91,17 @@ Der FlexCover-Förderantrag ist Teil eines Bundes-Programms („Hermesdeckungen"
 - Browser-/AT-Support: aktuelle Chrome/Firefox/Edge/Safari; Screenreader NVDA (Referenz)
 - Keine PII in etwaigen neuen Logs (DSGVO, projektweit)
 
+## Rechtliche Einordnung: Muss das PDF barrierefrei sein? (2026-06-29)
+> Einschätzung, kein anwaltlicher Rat — finale Festlegung durch die verantwortliche Stelle (ggf. Justiziariat), insb. im Bundes-Förderkontext.
+
+- PDFs sind **nicht automatisch ausgenommen**, nur weil die Web-App barrierefrei ist. Entscheidend ist die Art des Dokuments:
+  - **Veröffentlichte Dokumente** (Merkblätter, leere Formularvorlage, Infos der Stelle) → klar im Umfang, sollen barrierefrei/PDF-UA sein.
+  - **Transaktionsergebnis aus eigener Eingabe** (das ausgefüllte Antrags-PDF) → Pflicht liegt primär auf dem **barrierefreien Prozess** (zugängliche Web-Oberfläche); das PDF ist die „Quittung".
+- **Anerkannte Abmilderung** (BITV & BFSG): barrierefreie **Alternative auf Anfrage** + offene Deklaration in der Erklärung („teilweise konform; PDF nicht vollständig barrierefrei; zugängliches Format auf Anfrage") — steht bereits auf `/barrierefreiheit`. Zusätzlich ggf. „unverhältnismäßige Belastung" (Renderer-Wechsel + PII-Server-Problematik, siehe PROJ-18).
+- **Fazit:** Pflicht-Kern (zugängliche Web-App) ist mit PROJ-17 erfüllt. Vollständig barrierefreies PDF (PDF/UA) ist **Best Practice / risikomindernd**, aber für ein *selbst erzeugtes* Antrags-PDF **kein zwingender Sofort-Blocker**, solange Erklärung + Alternative-auf-Anfrage stehen → **PROJ-18 kann nachgelagert** geplant werden (oder priorisiert, falls Abnahme als öffentliche Stelle es verlangt).
+
 ## Open Questions
+- [ ] **Regime klären: BITV (öffentliche Stelle) oder BFSG (privater Dienst)?** Bestimmt sowohl die zu nennende Durchsetzungs-/Schlichtungsstelle als auch, wie streng die PDF-Barrierefreiheit (PROJ-18) verlangt wird.
 - [ ] Welcher konkrete **Feedback-Kontakt** kommt in die Barrierefreiheitserklärung (E-Mail/Adresse) und welche **Durchsetzungs-/Schlichtungsstelle** ist zu nennen? (Vorschlag: bestehende Kontakt-/Impressum-Adresse; Schlichtungsstelle nach BGG, falls öffentliche Stelle.) — **Vorerst Platzhalter** in der Seite; vor Go-Live durch echte Angaben ersetzen.
 - [ ] Reicht der barrierefreie Modus von **Cloudflare Turnstile** (inkl. Audio-Challenge) für AA, oder braucht es einen alternativen Verifizierungspfad?
 - [ ] **Externer BITV-Test:** wann, durch wen, vor welcher (öffentlichen) Abnahme?
