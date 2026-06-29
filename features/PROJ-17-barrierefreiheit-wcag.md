@@ -1,6 +1,6 @@
 # PROJ-17: Barrierefreiheit (WCAG 2.1 AA)
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-06-29
 **Last Updated:** 2026-06-29
 
@@ -178,6 +178,31 @@ Es werden keine neuen Daten gespeichert. Die Barrierefreiheitserklärung ist sta
 ### E) Abhängigkeiten (zu installieren)
 - **@axe-core/playwright** (nur Entwicklung/Tests) — automatisierte Barrierefreiheits-Prüfungen innerhalb der bestehenden Playwright-E2E-Suite.
 - Für visuell verborgene, aber vorlesbare Texte (z. B. „Pflichtfeld", Button-Kontext) genügt das vorhandene `sr-only`-Hilfsmittel von Tailwind — **kein zusätzliches Laufzeit-Paket nötig**.
+
+## Implementierungsnotizen (Frontend)
+**Stand:** 2026-06-29 — Frontend-Umsetzung abgeschlossen, bereit für `/qa`.
+
+**Form-Engine (zentraler Hebel):**
+- `Field.tsx`: Jedes Bedienelement erhält `aria-invalid`, `aria-required` und `aria-describedby` (verknüpft mit Hilfe- bzw. Fehlertext über stabile IDs `…-help` / `…-error`). Pflicht-`*` zusätzlich mit `sr-only`-Text „(Pflichtfeld)". Radiogruppen (yes/no) über `aria-labelledby` an die Beschriftung gebunden. Hilfetexte von `text-xs` auf `text-sm` angehoben (Lesbarkeit). Währungs-/Prozent-Symbole `aria-hidden`.
+- Berechnete Felder: `disabled` → `readOnly` + `aria-readonly` (+ `bg-muted`), Wert bleibt für AT/Tastatur wahrnehmbar.
+- `nodes.tsx`: Icon-Buttons mit Kontext-Namen (`aria-label="Eintrag 2 entfernen"`, „Zeile 3 entfernen"); Icons `aria-hidden`. Tabellen mit `<caption class="sr-only">`, `scope="col"`/`scope="row"`, Zeilen-/Index-Spalte als `<th scope="row">`, jede Zelle mit `aria-label` (Zeilen-/Spaltenbezug). Wiederholgruppe: Fokus nach „Entfernen" auf den „Hinzufügen"-Button (kein Sprung an den Seitenanfang).
+- `FormEngine.tsx`: Bei Submit mit Fehlern → Wechsel auf den betroffenen Abschnitt (Tab-Layout), Fokus auf das erste fehlerhafte Feld, zusätzlich `aria-live="polite"`-Ansage (Wortlaut bewusst abweichend vom sichtbaren Toast).
+
+**Globale Hülle:**
+- `layout.tsx`: Skip-Link „Zum Inhalt springen" (erstes fokussierbares Element) → `main#hauptinhalt` (Landmark, `tabIndex=-1`). Globaler `SiteFooter` (`site-footer.tsx`) mit Datenschutz + Barrierefreiheit auf allen Seiten. Body als `flex min-h-screen flex-col`.
+- Alle seiteneigenen `<main>` (Start, Dashboard, Datenschutz, Einreichung/Bestätigung/Liste, FlexCoverAntrag, Demo) auf `<div>` umgestellt (keine doppelten/verschachtelten Landmarks). Startseite: eigener Footer entfernt (jetzt global). `(auth)`-Layout-Höhe auf `min-h-full`.
+
+**Styles/Kontrast (`globals.css`):**
+- `--destructive` 60,2 % → 42 % Helligkeit (Fehler-/Pflichttext ≥ 4,5:1 gegen Weiß).
+- `--muted-foreground` 46,1 % → 40 % (gedämpfter Text/Platzhalter/Tab-Nummern ≥ 4,5:1 auch auf muted-Flächen; per axe verifiziert).
+- Skip-Link-Styling (verborgen bis Fokus) im `components`-Layer.
+
+**Neue Seite:** `/barrierefreiheit` — statische Erklärung (Konformitätsstatus, bekannte Einschränkungen [PDF→PROJ-18, Turnstile], Erstellungsdatum, **Platzhalter** für Feedback-Kontakt + Schlichtungsstelle).
+
+**Tests:** `@axe-core/playwright` (Dev) ergänzt. Neue Suite `tests/PROJ-17-accessibility.spec.ts`: axe (wcag2a/2aa/21a/21aa) gegen 7 anonyme Seiten = 0 kritische/schwere Verstöße; Skip-Link/Landmark/Footer-Struktur; Engine-Fehlerführung (`aria-required`, `aria-invalid` + verknüpfte Meldung). Bestehende Suite angepasst: Engine-Live-Region-Wortlaut so gewählt, dass `getByText(/korrigieren/)` weiterhin eindeutig den Toast trifft.
+- **Lokal:** 117 Unit-Tests grün; E2E 52 passed / 1 skipped (Turnstile) grün (chromium, gegen warmgelaufenen Dev-Server — der Dropbox-`.next`-Kaltkompilier-EPERM-Flake ist umgebungsbedingt, kein Defekt).
+
+**Offen für QA:** manueller Tastatur-/NVDA-Durchlauf der Kernflows; Bewertung Turnstile-Barrierefreiheit; 200 %-Zoom/320 px-Reflow; Cross-Browser. PDF-Barrierefreiheit bleibt out of scope (PROJ-18).
 
 ## QA Test Results
 _To be added by /qa_

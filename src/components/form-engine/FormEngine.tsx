@@ -98,6 +98,15 @@ export function FormEngine({
   });
   const { getValues, setError, clearErrors, reset, control, formState } = methods;
 
+  // Aktiver Abschnitt (kontrolliert), damit er gespeichert/wiederhergestellt und
+  // bei Validierungsfehlern gezielt angesteuert werden kann.
+  const [activeSection, setActiveSection] = useState(
+    initialSection ?? definition.sections[0]?.key ?? "",
+  );
+  // Höflichkeits-Live-Region: kündigt die Fehlersituation für Screenreader an,
+  // ohne den Fokus zu verschieben.
+  const [errorAnnouncement, setErrorAnnouncement] = useState("");
+
   const validateSingleField = (node: FieldNode, path: string) => {
     const msg = validateField(node, getValues(path), getValues() as FormValues, registry);
     if (msg) setError(path, { type: "validate", message: msg });
@@ -114,8 +123,29 @@ export function FormEngine({
     if (paths.length > 0) {
       for (const p of paths) setError(p, { type: "validate", message: errs[p] });
       toast.error(`Bitte ${paths.length} Eingabe(n) korrigieren.`);
+      // Für assistive Technik ansagen, dass Fehler vorliegen (Wortlaut bewusst
+      // anders als der sichtbare Toast, damit beide eindeutig adressierbar sind).
+      setErrorAnnouncement(
+        `Das Formular hat ${paths.length} fehlerhafte Angabe(n). ` +
+          `Bitte prüfen Sie die hervorgehobenen Felder.`,
+      );
+      // … zum betroffenen Abschnitt wechseln (Reiter-Layout) …
+      const firstPath = paths[0];
+      const sectionKey = firstPath.split(".")[0];
+      if (definition.sections.some((s) => s.key === sectionKey)) {
+        setActiveSection(sectionKey);
+      }
+      // … und den Fokus auf das erste fehlerhafte Feld setzen (nach dem Re-Render).
+      requestAnimationFrame(() => {
+        const el =
+          document.getElementById(firstPath) ??
+          document.getElementById(`${firstPath}-ja`) ??
+          (document.querySelector(`[name="${firstPath}"]`) as HTMLElement | null);
+        el?.focus();
+      });
       return;
     }
+    setErrorAnnouncement("");
     void action(pruneHiddenValues(definition, values));
   };
 
@@ -143,11 +173,6 @@ export function FormEngine({
     return map;
   }, [formState.errors, definition.sections]);
 
-  // Aktiver Abschnitt (kontrolliert), damit er gespeichert/wiederhergestellt werden kann.
-  const [activeSection, setActiveSection] = useState(
-    initialSection ?? definition.sections[0]?.key ?? "",
-  );
-
   // Änderungen nach außen melden (für Auto-Save). onStateChange über Ref entkoppelt,
   // damit der Effekt nur bei echten Werte-/Abschnittsänderungen feuert.
   const onStateChangeRef = useRef(onStateChange);
@@ -161,6 +186,11 @@ export function FormEngine({
     <FormEngineProvider value={{ definition, registry, validateSingleField }}>
       <FormProvider {...methods}>
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} noValidate>
+          {/* Unsichtbare Live-Region: kündigt Validierungsfehler für Screenreader
+              an, ohne den Fokus zu verschieben. */}
+          <p aria-live="polite" role="status" className="sr-only">
+            {errorAnnouncement}
+          </p>
           {definition.layout === "tabs" && (
             <TabsLayout
               sections={visibleSections}

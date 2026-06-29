@@ -38,7 +38,7 @@ export default async function DashboardPage() {
   const activeDraft = draftRow && !isDraftExpired(draftRow.updated_at) ? draftRow : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold">{greeting}</h1>
         <p className="text-sm text-muted-foreground">Deine Anträge im Überblick</p>
@@ -84,6 +84,6 @@ export default async function DashboardPage() {
           )}
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

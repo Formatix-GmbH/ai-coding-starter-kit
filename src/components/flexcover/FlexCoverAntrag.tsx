@@ -508,7 +508,7 @@ function FlexCoverForm({
   ) : undefined;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <FormEngine
         key={formKey}
         definition={flexcoverDefinition}
@@ -540,6 +540,6 @@ function FlexCoverForm({
         actionsNote={isAuthed ? einreichCaptcha : anonHint}
         header={header}
       />
-    </main>
+    </div>
   );
 }

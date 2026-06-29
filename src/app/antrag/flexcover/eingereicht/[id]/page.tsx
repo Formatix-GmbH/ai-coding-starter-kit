@@ -40,7 +40,7 @@ export default async function EinreichungBestaetigungPage({
   // Nicht gefunden / abgelaufen → freundlicher Hinweis statt Fehlerseite.
   if (!submission || isSubmissionExpired(submission.submitted_at)) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto max-w-2xl px-4 py-10">
         <Card>
           <CardHeader>
             <CardTitle>Einreichung nicht gefunden</CardTitle>
@@ -60,7 +60,7 @@ export default async function EinreichungBestaetigungPage({
             </div>
           </CardContent>
         </Card>
-      </main>
+      </div>
     );
   }
 
@@ -69,7 +69,7 @@ export default async function EinreichungBestaetigungPage({
   const emailSent = mail !== "failed";
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-10">
       <Card>
         <CardHeader>
           <CardTitle>Ihr Antrag wurde eingereicht</CardTitle>
@@ -97,6 +97,6 @@ export default async function EinreichungBestaetigungPage({
           />
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

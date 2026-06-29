@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Datenschutzerklärung" };
 
 export default function PrivacyPage() {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-12">
+    <div className="mx-auto max-w-2xl px-4 py-12">
       <h1 className="mb-2 text-2xl font-semibold">Datenschutzerklärung</h1>
       <p className="mb-8 text-sm text-muted-foreground">Version {PRIVACY_VERSION}</p>
 
@@ -33,6 +33,6 @@ export default function PrivacyPage() {
           Zur Startseite
         </Link>
       </div>
-    </main>
+    </div>
   );
 }

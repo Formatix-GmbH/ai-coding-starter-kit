@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import {
   Controller,
   useFieldArray,
@@ -85,22 +86,32 @@ function RepeatGroup({
   const path = joinPath(base, node.key);
   const { control } = useFormContext<FieldValues>();
   const { fields, append, remove } = useFieldArray({ control, name: path });
+  const addButtonRef = useRef<HTMLButtonElement>(null);
 
   const canAdd = node.max === undefined || fields.length < node.max;
   const canRemove = (count: number) => node.min === undefined || count > node.min;
+  const itemName = node.itemLabel ?? "Eintrag";
+
+  const handleRemove = (index: number) => {
+    remove(index);
+    // Fokus nach dem Entfernen sinnvoll halten (sonst springt er an den
+    // Seitenanfang/verschwindet): auf den „Hinzufügen"-Button setzen.
+    requestAnimationFrame(() => addButtonRef.current?.focus());
+  };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">{node.label}</h3>
         <Button
+          ref={addButtonRef}
           type="button"
           variant="outline"
           size="sm"
           disabled={!canAdd}
           onClick={() => append({})}
         >
-          <Plus className="mr-1 h-4 w-4" />
+          <Plus aria-hidden className="mr-1 h-4 w-4" />
           {node.itemLabel ? `${node.itemLabel} hinzufügen` : "Hinzufügen"}
         </Button>
       </div>
@@ -115,16 +126,17 @@ function RepeatGroup({
         <div key={f.id} className="space-y-4 rounded-md border p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-muted-foreground">
-              {node.itemLabel ?? "Eintrag"} {index + 1}
+              {itemName} {index + 1}
             </span>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               disabled={!canRemove(fields.length)}
-              onClick={() => remove(index)}
+              onClick={() => handleRemove(index)}
+              aria-label={`${itemName} ${index + 1} entfernen`}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 aria-hidden className="h-4 w-4" />
             </Button>
           </div>
           {node.children.map((child) => (
@@ -136,7 +148,17 @@ function RepeatGroup({
   );
 }
 
-function TableCell({ path, type, options }: { path: string; type: TableColumn["type"]; options?: { value: string; label: string }[] }) {
+function TableCell({
+  path,
+  type,
+  options,
+  ariaLabel,
+}: {
+  path: string;
+  type: TableColumn["type"];
+  options?: { value: string; label: string }[];
+  ariaLabel: string;
+}) {
   const { control, register, getFieldState, formState } = useFormContext<FieldValues>();
   const hasError = Boolean(getFieldState(path, formState).error);
   const errorClass = hasError ? "border-destructive" : undefined;
@@ -148,7 +170,11 @@ function TableCell({ path, type, options }: { path: string; type: TableColumn["t
         name={path}
         render={({ field }) => (
           <Select value={(field.value as string) ?? ""} onValueChange={field.onChange}>
-            <SelectTrigger className={errorClass}>
+            <SelectTrigger
+              className={errorClass}
+              aria-label={ariaLabel}
+              aria-invalid={hasError ? true : undefined}
+            >
               <SelectValue placeholder="—" />
             </SelectTrigger>
             <SelectContent>
@@ -169,6 +195,8 @@ function TableCell({ path, type, options }: { path: string; type: TableColumn["t
       type={inputType}
       inputMode={isNumeric ? "decimal" : undefined}
       className={errorClass}
+      aria-label={ariaLabel}
+      aria-invalid={hasError ? true : undefined}
       {...register(path)}
     />
   );
@@ -194,27 +222,39 @@ function TableView({
       {node.label && <h3 className="text-sm font-medium">{node.label}</h3>}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
+          {/* Caption verankert den Tabellennamen für Screenreader auch dann,
+              wenn die sichtbare Überschrift visuell daneben steht. */}
+          {node.label && <caption className="sr-only">{node.label}</caption>}
           <thead>
             <tr className="border-b">
-              <th className="p-2 text-left font-medium" />
+              <th scope="col" className="p-2 text-left font-medium">
+                <span className="sr-only">Bezeichnung</span>
+              </th>
               {node.columns.map((col) => (
-                <th key={col.key} className="p-2 text-left font-medium">
+                <th key={col.key} scope="col" className="p-2 text-left font-medium">
                   {col.label}
                 </th>
               ))}
-              {isDynamic && <th className="p-2" />}
+              {isDynamic && (
+                <th scope="col" className="p-2">
+                  <span className="sr-only">Aktionen</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
             {!isDynamic &&
               (node.rows ?? []).map((row) => (
                 <tr key={row.key} className="border-b">
-                  <td className="p-2 font-medium text-muted-foreground">{row.label}</td>
+                  <th scope="row" className="p-2 text-left font-medium text-muted-foreground">
+                    {row.label}
+                  </th>
                   {node.columns.map((col) => (
                     <td key={col.key} className="p-2">
                       <TableCell
                         path={joinPath(path, row.key, col.key)}
                         type={col.type}
+                        ariaLabel={`${row.label} – ${col.label}`}
                       />
                     </td>
                   ))}
@@ -223,18 +263,27 @@ function TableView({
             {isDynamic &&
               fields.map((f, index) => (
                 <tr key={f.id} className="border-b">
-                  <td className="p-2 text-muted-foreground">{index + 1}</td>
+                  <th scope="row" className="p-2 font-medium text-muted-foreground">
+                    {index + 1}
+                  </th>
                   {node.columns.map((col) => (
                     <td key={col.key} className="p-2">
                       <TableCell
                         path={joinPath(path, index, col.key)}
                         type={col.type}
+                        ariaLabel={`${col.label} (Zeile ${index + 1})`}
                       />
                     </td>
                   ))}
                   <td className="p-2">
-                    <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>
-                      <Trash2 className="h-4 w-4" />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      aria-label={`Zeile ${index + 1} entfernen`}
+                    >
+                      <Trash2 aria-hidden className="h-4 w-4" />
                     </Button>
                   </td>
                 </tr>
@@ -250,7 +299,7 @@ function TableView({
           disabled={node.max !== undefined && fields.length >= node.max}
           onClick={() => append({})}
         >
-          <Plus className="mr-1 h-4 w-4" />
+          <Plus aria-hidden className="mr-1 h-4 w-4" />
           {node.addLabel ?? "Zeile hinzufügen"}
         </Button>
       )}

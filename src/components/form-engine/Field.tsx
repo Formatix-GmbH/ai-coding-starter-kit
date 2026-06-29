@@ -23,6 +23,39 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
+/** Stabile, ableitbare IDs für Hilfetext/Fehlertext/Beschriftung eines Feldes. */
+function fieldIds(id: string) {
+  return {
+    labelId: `${id}-label`,
+    helpId: `${id}-help`,
+    errorId: `${id}-error`,
+  };
+}
+
+/** Baut die ARIA-Eigenschaften, die jedes Bedienelement bekommt, damit
+ *  Screenreader Pflicht, Fehlerzustand und die zugehörige Meldung/Hilfe
+ *  programmatisch ermitteln können. */
+function ariaProps({
+  id,
+  required,
+  hasError,
+  hasHelp,
+}: {
+  id: string;
+  required?: boolean;
+  hasError: boolean;
+  hasHelp: boolean;
+}) {
+  const { helpId, errorId } = fieldIds(id);
+  // Fehlertext ersetzt den Hilfetext in der Anzeige → entsprechend verknüpfen.
+  const describedBy = hasError ? errorId : hasHelp ? helpId : undefined;
+  return {
+    "aria-invalid": hasError ? (true as const) : undefined,
+    "aria-required": required ? (true as const) : undefined,
+    "aria-describedby": describedBy,
+  };
+}
+
 function FieldShell({
   id,
   label,
@@ -38,15 +71,28 @@ function FieldShell({
   error?: string;
   children: React.ReactNode;
 }) {
+  const { labelId, helpId, errorId } = fieldIds(id);
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>
+      <Label id={labelId} htmlFor={id}>
         {label}
-        {required && <span className="ml-0.5 text-destructive">*</span>}
+        {required && (
+          <span className="ml-0.5 text-destructive">
+            *<span className="sr-only"> (Pflichtfeld)</span>
+          </span>
+        )}
       </Label>
       {children}
-      {help && !error && <p className="text-xs text-muted-foreground">{help}</p>}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {help && !error && (
+        <p id={helpId} className="text-sm text-muted-foreground">
+          {help}
+        </p>
+      )}
+      {error && (
+        <p id={errorId} className="text-sm font-medium text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -57,6 +103,13 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
   const { registry, validateSingleField } = useFormEngine();
   const error = getFieldState(path, formState).error?.message as string | undefined;
   const id = path;
+  const { labelId } = fieldIds(id);
+  const a11y = ariaProps({
+    id,
+    required: node.required,
+    hasError: Boolean(error),
+    hasHelp: Boolean(node.help),
+  });
 
   // Berechnete (read-only) Felder
   const allValues = useWatch<FieldValues>();
@@ -69,9 +122,18 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
 
   if (node.computed) {
     const result = computeValue(node.computed, allValues ?? {}, registry);
+    // Schreibgeschützt statt deaktiviert: der Wert bleibt für Tastatur und
+    // Screenreader wahrnehmbar und wird als „nur lesbar" angekündigt.
     return (
       <FieldShell id={id} label={node.label} help={node.help}>
-        <Input id={id} value={result ?? ""} readOnly disabled />
+        <Input
+          id={id}
+          value={result ?? ""}
+          readOnly
+          aria-readonly
+          className="bg-muted"
+          aria-describedby={node.help ? fieldIds(id).helpId : undefined}
+        />
       </FieldShell>
     );
   }
@@ -93,7 +155,7 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
                 validateSingleField(node, path);
               }}
             >
-              <SelectTrigger id={id}>
+              <SelectTrigger id={id} {...a11y}>
                 <SelectValue placeholder={node.placeholder ?? "Bitte wählen"} />
               </SelectTrigger>
               <SelectContent>
@@ -125,6 +187,10 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
                 validateSingleField(node, path);
               }}
               className="flex gap-6"
+              // Die Radiogruppe trägt selbst Beschriftung, Pflicht- und Fehlerbezug,
+              // da das einzelne Element keine <label for>-Verknüpfung hat.
+              aria-labelledby={labelId}
+              {...a11y}
             >
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="Ja" id={`${id}-ja`} />
@@ -143,6 +209,7 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
 
   // Checkbox (einzeln)
   if (node.type === "checkbox") {
+    const { errorId } = fieldIds(id);
     return (
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
@@ -157,15 +224,26 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
                   field.onChange(c === true);
                   validateSingleField(node, path);
                 }}
+                aria-required={node.required ? true : undefined}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
               />
             )}
           />
           <Label htmlFor={id} className="font-normal">
             {node.label}
-            {node.required && <span className="ml-0.5 text-destructive">*</span>}
+            {node.required && (
+              <span className="ml-0.5 text-destructive">
+                *<span className="sr-only"> (Pflichtfeld)</span>
+              </span>
+            )}
           </Label>
         </div>
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && (
+          <p id={errorId} className="text-sm font-medium text-destructive">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
@@ -174,7 +252,7 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
   if (node.type === "textarea") {
     return (
       <FieldShell id={id} label={node.label} required={node.required} help={node.help} error={error}>
-        <Textarea id={id} placeholder={node.placeholder} {...register(path)} onBlur={onBlur} />
+        <Textarea id={id} placeholder={node.placeholder} {...a11y} {...register(path)} onBlur={onBlur} />
       </FieldShell>
     );
   }
@@ -193,16 +271,17 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
           inputMode={isNumeric || node.type === "year" ? "decimal" : undefined}
           placeholder={node.placeholder}
           className={node.type === "currency" ? "pr-7" : undefined}
+          {...a11y}
           {...register(path)}
           onBlur={onBlur}
         />
         {node.type === "currency" && (
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+          <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
             €
           </span>
         )}
         {node.type === "percent" && (
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+          <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
             %
           </span>
         )}
