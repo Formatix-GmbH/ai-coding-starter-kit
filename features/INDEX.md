@@ -31,7 +31,7 @@
 | PROJ-14 | Deployment & Infrastruktur (Hetzner Cloud + Cloudflare) | Deployed | [PROJ-14](PROJ-14-deployment-infrastruktur.md) | 2026-06-22 |
 | PROJ-15 | Staging-Umgebung | Deployed | [PROJ-15](PROJ-15-staging-umgebung.md) | 2026-06-24 |
 | PROJ-16 | Bot-Schutz mit Cloudflare Turnstile | Deployed | [PROJ-16](PROJ-16-turnstile-botschutz.md) | 2026-06-28 |
-| PROJ-17 | Barrierefreiheit (WCAG 2.1 AA) | Approved | [PROJ-17](PROJ-17-barrierefreiheit-wcag.md) | 2026-06-29 |
+| PROJ-17 | Barrierefreiheit (WCAG 2.1 AA) | Deployed | [PROJ-17](PROJ-17-barrierefreiheit-wcag.md) | 2026-06-29 |
 
 <!-- Add features above this line -->
 

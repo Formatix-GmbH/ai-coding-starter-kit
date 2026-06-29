@@ -261,4 +261,16 @@ Es werden keine neuen Daten gespeichert. Die Barrierefreiheitserklärung ist sta
 Bestehende Suiten grün (Chromium 57/1 skip). Engine-Live-Region-Wortlaut so angepasst, dass bestehende `getByText(/korrigieren/)`-Selektoren wieder eindeutig den Toast treffen.
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-06-29 · **Tag:** `v1.1.0-PROJ-17`
+
+- **Produktion:** https://flexcover.eforms.de — live (HTTP 200). Verifiziert: Skip-Link, `main#hauptinhalt`-Landmark, globaler Footer-Link „Barrierefreiheit", Erklärungsseite https://flexcover.eforms.de/barrierefreiheit (H1 „Erklärung zur Barrierefreiheit"), Antragsformular 200. Kein `noindex` (korrekt für Prod).
+- **Staging:** https://flexcover-staging.eforms.de — vorab verifiziert (gleiche Punkte), `noindex` bleibt.
+- **Pipeline:** `develop` → Staging-Auto-Deploy, `main` → Prod-Auto-Deploy (GitHub Actions, Docker auf Hetzner Cloud hinter Traefik/Cloudflare; PROJ-14). Keine DB-Migration, keine neuen Laufzeit-Env-Vars (`@axe-core/playwright` ist Dev-only).
+- **Pre-Deploy:** Lint sauber; 117 Unit + E2E grün (gegen warmen Server). Lokaler `npm run build` ist nur durch den Dropbox-`.next`-Lock blockiert — der CI/Docker-Build (maßgeblich) läuft sauber durch (Staging+Prod erfolgreich gebaut).
+
+### Offene Go-Live-Bedingungen (nach Deploy, durch Menschen)
+Diese sind **kein Code-Defekt**, aber vor der formalen/öffentlichen Abnahme zu erledigen:
+- Manueller NVDA-/Tastatur-Durchlauf der Kernflows.
+- 200 %-Zoom- und 320-px-Sichtprüfung.
+- Bewertung der Turnstile-Audio-Challenge mit AT.
+- Platzhalter in `/barrierefreiheit` ersetzen (Datum, Feedback-Kontakt, Schlichtungsstelle).
