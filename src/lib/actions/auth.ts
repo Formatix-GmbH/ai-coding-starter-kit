@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PRIVACY_VERSION } from "@/lib/constants";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
-import { verifyTurnstile, clientIpFromHeaders } from "@/lib/turnstile/verify";
 import {
   registerSchema,
   loginSchema,
@@ -27,16 +26,20 @@ async function getOrigin(): Promise<string> {
 }
 
 const TURNSTILE_FAIL =
-  "Bot-Schutz fehlgeschlagen. Bitte die Seite neu laden und erneut versuchen.";
+  "Bot-Schutz fehlgeschlagen. Bitte die Verifizierung erneut durchführen.";
 
-/** Prüft den Turnstile-Token aus dem Formular (PROJ-16). */
-async function turnstileOk(formData: FormData): Promise<boolean> {
-  const ip = clientIpFromHeaders(await headers());
-  return verifyTurnstile(formData.get("turnstileToken")?.toString(), ip);
+/** Liest den Turnstile-Token aus dem Formular. Wird an Supabase durchgereicht
+ *  (Supabase-natives CAPTCHA, PROJ-16) — Verifizierung übernimmt Supabase. */
+function captchaToken(formData: FormData): string | undefined {
+  return formData.get("turnstileToken")?.toString() || undefined;
+}
+
+/** Erkennt Supabase-Captcha-Fehler, um eine sprechende Meldung zu liefern. */
+function isCaptchaError(message: string): boolean {
+  return message.toLowerCase().includes("captcha");
 }
 
 export async function registerAction(formData: FormData): Promise<ActionResult> {
-  if (!(await turnstileOk(formData))) return { ok: false, message: TURNSTILE_FAIL };
   const parsed = registerSchema.safeParse({
     fullName: formData.get("fullName"),
     email: formData.get("email"),
@@ -59,12 +62,14 @@ export async function registerAction(formData: FormData): Promise<ActionResult> 
         privacy_version: PRIVACY_VERSION,
       },
       emailRedirectTo: `${origin}/auth/callback`,
+      captchaToken: captchaToken(formData),
     },
   });
 
   // Kein User-Enumeration: bei bereits existierender E-Mail liefert Supabase
   // (mit aktivierter Bestätigung) keinen Fehler. Echte Fehler neutral melden.
   if (error) {
+    if (isCaptchaError(error.message)) return { ok: false, message: TURNSTILE_FAIL };
     return { ok: false, message: "Registrierung fehlgeschlagen. Bitte später erneut versuchen." };
   }
   return {
@@ -75,7 +80,6 @@ export async function registerAction(formData: FormData): Promise<ActionResult> 
 }
 
 export async function loginAction(formData: FormData): Promise<ActionResult> {
-  if (!(await turnstileOk(formData))) return { ok: false, message: TURNSTILE_FAIL };
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -88,10 +92,12 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
   const { error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
+    options: { captchaToken: captchaToken(formData) },
   });
 
   if (error) {
     const msg = error.message.toLowerCase();
+    if (isCaptchaError(msg)) return { ok: false, message: TURNSTILE_FAIL };
     if (msg.includes("not confirmed") || msg.includes("not been confirmed")) {
       return {
         ok: false,
@@ -114,15 +120,19 @@ export async function logoutAction(): Promise<void> {
 export async function forgotPasswordAction(
   formData: FormData,
 ): Promise<ActionResult> {
-  if (!(await turnstileOk(formData))) return { ok: false, message: TURNSTILE_FAIL };
   const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
   // Immer neutrale Antwort (kein User-Enumeration), auch bei ungültiger Eingabe.
   if (parsed.success) {
     const supabase = await createClient();
     const origin = await getOrigin();
-    await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
       redirectTo: `${origin}/auth/callback?next=/passwort-zuruecksetzen`,
+      captchaToken: captchaToken(formData),
     });
+    // Nur ein Captcha-Fehler wird sprechend gemeldet (kein Enumeration-Risiko).
+    if (error && isCaptchaError(error.message)) {
+      return { ok: false, message: TURNSTILE_FAIL };
+    }
   }
   return {
     ok: true,
