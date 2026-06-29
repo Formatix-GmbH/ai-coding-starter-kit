@@ -1,8 +1,10 @@
 # PROJ-17: Barrierefreiheit (WCAG 2.1 AA)
 
-## Status: In Progress
+## Status: Approved
 **Created:** 2026-06-29
 **Last Updated:** 2026-06-29
+
+> **Go-Live-Bedingungen (kein Code-Defekt, vor/bei `/deploy` zu erledigen):** manueller NVDA-/Tastatur-Durchlauf der Kernflows, 200 %-Zoom/320-px-Sichtprüfung, Bewertung Turnstile-Audio-Challenge, sowie Ersetzen der Platzhalter in `/barrierefreiheit` (Datum, Feedback-Kontakt, Schlichtungsstelle).
 
 ## Dependencies
 - Requires: PROJ-3 (Dynamic Form Engine) — die Engine ist die zentrale, wiederverwendbare Stelle; Fixes hier wirken für jedes künftige Formular
