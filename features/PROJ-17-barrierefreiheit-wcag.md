@@ -90,7 +90,7 @@ Der FlexCover-Förderantrag ist Teil eines Bundes-Programms („Hermesdeckungen"
 - Keine PII in etwaigen neuen Logs (DSGVO, projektweit)
 
 ## Open Questions
-- [ ] Welcher konkrete **Feedback-Kontakt** kommt in die Barrierefreiheitserklärung (E-Mail/Adresse) und welche **Durchsetzungs-/Schlichtungsstelle** ist zu nennen? (Vorschlag: bestehende Kontakt-/Impressum-Adresse; Schlichtungsstelle nach BGG, falls öffentliche Stelle.)
+- [ ] Welcher konkrete **Feedback-Kontakt** kommt in die Barrierefreiheitserklärung (E-Mail/Adresse) und welche **Durchsetzungs-/Schlichtungsstelle** ist zu nennen? (Vorschlag: bestehende Kontakt-/Impressum-Adresse; Schlichtungsstelle nach BGG, falls öffentliche Stelle.) — **Vorerst Platzhalter** in der Seite; vor Go-Live durch echte Angaben ersetzen.
 - [ ] Reicht der barrierefreie Modus von **Cloudflare Turnstile** (inkl. Audio-Challenge) für AA, oder braucht es einen alternativen Verifizierungspfad?
 - [ ] **Externer BITV-Test:** wann, durch wen, vor welcher (öffentlichen) Abnahme?
 - [ ] Konkretes **Erstellungs-/Prüfdatum** und Konformitätsaussage („vollständig/teilweise konform") für die Erklärung — wird nach der internen Abnahme festgelegt.
@@ -112,12 +112,72 @@ Der FlexCover-Förderantrag ist Teil eines Bundes-Programms („Hermesdeckungen"
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| Fixes zentral in der Form-Engine, nicht je Formular | Ein Fix (Feld↔Fehler-Verknüpfung, Pflicht, Fokus) wirkt für alle Formulare; passt zum definitionsgesteuerten Produktkern; günstiger + konsistent | 2026-06-29 |
+| Auf bestehender Radix/shadcn-Basis aufbauen, kein Neubau | Komponenten unterstützen die ARIA-Eigenschaften bereits — nur korrekt verdrahten | 2026-06-29 |
+| Berechnete Felder „read-only" statt „disabled" | Disabled-Felder sind für AT/Tastatur unsichtbar; read-only bleibt wahrnehmbar | 2026-06-29 |
+| Globaler Footer in der Layout-Hülle (statt nur Startseite) | Barrierefreiheitserklärung muss von jeder Seite erreichbar sein (BITV) | 2026-06-29 |
+| @axe-core/playwright als einzige neue (Dev-)Abhängigkeit | Automatische A11y-Checks in der vorhandenen E2E-Suite; sr-only deckt verborgene Texte ohne Extra-Paket ab | 2026-06-29 |
+| Kein Backend/keine Datenhaltung; Feedback per E-Mail-Link | Erklärung ist statisch; Feedback braucht kein gespeichertes Formular | 2026-06-29 |
+| Turnstile: eingebauter barrierefreier Modus statt eigenem Pfad | Cloudflare bietet Tastatur + Audio-Challenge; Eigenbau unverhältnismäßig — AA-Tauglichkeit in QA bewerten | 2026-06-29 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Grundsatz
+Reines **Frontend-Vorhaben** — keine Datenbank, keine API, kein neues Backend. Es werden überwiegend **bestehende Bausteine nachgehärtet** (vor allem die Form-Engine als zentrale Stelle), eine **statische Seite** ergänzt und die **Test-Infrastruktur** um automatisierte Barrierefreiheits-Prüfungen erweitert. Der größte Effekt entsteht in der Engine: ein Fix dort wirkt für das FlexCover-Formular **und jedes künftige Formular**.
+
+### A) Was wird angefasst (Änderungs-Landkarte)
+```
+Globale Hülle (Layout)
+├── „Zum Inhalt springen"-Link (erstes fokussierbares Element)
+├── Hauptinhalt als eindeutiger „main"-Bereich (Landmark, Sprungziel)
+├── Globaler Footer (jetzt auf ALLEN Seiten)
+│   ├── Link „Datenschutz"
+│   └── Link „Barrierefreiheit"  ← neu
+└── Sichtbarer Tastatur-Fokus (einheitlich, projektweit)
+
+Form-Engine (zentraler Hebel)
+├── Feld-Hülle: Beschriftung, Hilfetext & Fehlertext fest mit dem Feld verknüpft
+│   (Feld kennt seinen Fehler-/Hilfetext; ungültig/Pflicht programmatisch erkennbar)
+├── Pflicht & Fehler nicht nur per Farbe (zusätzliches Text-/Symbol-Signal)
+├── Berechnete Felder: „schreibgeschützt" statt „deaktiviert" (Wert bleibt vorlesbar)
+├── Icon-Buttons (Eintrag +/−, Zeile +/−): aussagekräftige Namen mit Kontext
+├── Tabellen: Spalten-/Zeilenbezug für Vorlese-Software
+├── Submit mit Fehlern: Fehlerübersicht + Fokus springt zum 1. Fehler
+│   (im Reiter-Layout zusätzlich auf den betroffenen Abschnitt wechseln)
+└── Status-/Erfolgsmeldungen werden angesagt (Auto-Save, Einreichung)
+
+Neue Seite
+└── /barrierefreiheit  (Barrierefreiheitserklärung, statisch)
+
+Test-Infrastruktur
+├── Automatische Prüfung (axe) je Antragsteller-Seite in der E2E-Suite
+└── Dokumentierter manueller Durchlauf (Tastatur + NVDA) im QA-Abschnitt
+```
+
+### B) Betroffene bestehende Dateien (Orientierung für die Bauphase)
+- **Form-Engine:** `src/components/form-engine/Field.tsx` (Feld-Hülle, Verknüpfung, Pflicht/Fehler, computed), `src/components/form-engine/nodes.tsx` (Icon-Buttons, Tabellen, Wiederholgruppen-Fokus), `src/components/form-engine/FormEngine.tsx` (Submit-Fehlerfokus/-übersicht), ggf. `context.tsx` (Helfer bereitstellen)
+- **Globale Hülle:** `src/app/layout.tsx` (Skip-Link, globaler Footer), `src/components/site-header.tsx`, je Seite ein klarer `main`-Bereich + Seitentitel
+- **Auth/Seiten:** Login-/Registrieren-/Passwort-Formulare, Start, Dashboard, Einreichung/Bestätigung/Liste, Datenschutz — jeweils Überschriftenhierarchie, Titel, Fehlerverknüpfung prüfen
+- **Stil-Token:** `globals.css` / Tailwind-Konfiguration — Kontrast der gedämpften Texte/Platzhalter/Fehlerfarben gegen AA prüfen; sehr kleine Hilfetexte (text-xs) für kritische Infos meiden
+- **Neu:** `src/app/barrierefreiheit/page.tsx`
+
+### C) Keine Datenhaltung
+Es werden keine neuen Daten gespeichert. Die Barrierefreiheitserklärung ist statischer Inhalt; der Feedback-Weg ist ein einfacher Kontakt-Link (E-Mail), kein Formular mit Speicherung.
+
+### D) Technische Entscheidungen (für PM begründet)
+- **Engine zuerst, nicht pro Formular flicken:** Die Verknüpfung von Feld↔Fehler/Hilfe, Pflicht-Kennzeichnung und Fokus-Steuerung wird **einmal in der Engine** gelöst. Das ist günstiger, konsistent und macht jedes spätere Formular automatisch konform — passt zum Produktkern (definitionsgesteuerte Engine).
+- **Auf vorhandener Radix/shadcn-Basis aufbauen:** Die genutzten Bausteine unterstützen die nötigen Barrierefreiheits-Eigenschaften bereits; wir „verdrahten" sie nur korrekt, statt etwas Eigenes zu bauen. Kein Komponenten-Neubau.
+- **„Schreibgeschützt" statt „deaktiviert" für berechnete Felder:** Deaktivierte Felder verschwinden für Vorlese-Software und Tastatur — schreibgeschützte bleiben wahrnehmbar. Wichtiger Korrektheits-Punkt.
+- **Globaler Footer statt nur Startseite:** Die Barrierefreiheitserklärung muss von **überall** erreichbar sein (rechtliche Anforderung) — daher wandert der Footer in die globale Hülle.
+- **Automatisiert + manuell prüfen:** Automatik (axe) fängt nur ~30–40 % der Probleme. Der manuelle Tastatur-/Screenreader-Durchlauf ist der eigentliche Konformitätsnachweis und wird dokumentiert.
+- **Turnstile-Captcha:** Wir nutzen den eingebauten barrierefreien Modus von Cloudflare (Tastatur + Audio-Challenge), statt einen eigenen Verifizierungspfad zu bauen. Ob das für AA reicht, wird in der QA bewertet (siehe offene Frage).
+
+### E) Abhängigkeiten (zu installieren)
+- **@axe-core/playwright** (nur Entwicklung/Tests) — automatisierte Barrierefreiheits-Prüfungen innerhalb der bestehenden Playwright-E2E-Suite.
+- Für visuell verborgene, aber vorlesbare Texte (z. B. „Pflichtfeld", Button-Kontext) genügt das vorhandene `sr-only`-Hilfsmittel von Tailwind — **kein zusätzliches Laufzeit-Paket nötig**.
 
 ## QA Test Results
 _To be added by /qa_
