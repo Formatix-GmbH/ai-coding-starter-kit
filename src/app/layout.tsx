@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
   title: {
@@ -18,6 +19,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body className="antialiased">
+        <SiteHeader />
         {children}
         <Toaster richColors />
       </body>

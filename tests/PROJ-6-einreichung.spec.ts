@@ -17,8 +17,10 @@ test.describe("Antragsseite (anonym)", () => {
 
   test("anonym sieht den Anmelde-Hinweis statt eines Einreichen-Buttons", async ({ page }) => {
     await expect(page.getByText("Zum Einreichen bitte anmelden")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Anmelden" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "registrieren" })).toBeVisible();
+    // Auf den Hinweis-Bereich eingrenzen (die globale Kopfzeile hat ebenfalls Auth-Links).
+    const hint = page.getByRole("alert").filter({ hasText: "Zum Einreichen bitte anmelden" });
+    await expect(hint.getByRole("link", { name: "Anmelden" })).toBeVisible();
+    await expect(hint.getByRole("link", { name: "registrieren" })).toBeVisible();
     // Kein „Antrag einreichen"-Button für anonyme Nutzer.
     await expect(page.getByRole("button", { name: "Antrag einreichen" })).toHaveCount(0);
   });

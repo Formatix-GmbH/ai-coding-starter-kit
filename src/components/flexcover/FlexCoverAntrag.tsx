@@ -299,8 +299,12 @@ function FlexCoverForm({
     toast.success("Entwurf verworfen.");
   }
 
-  // Nur in der Entwicklung: Formular mit vollständigem Beispieldatensatz füllen.
-  const isDev = process.env.NODE_ENV !== "production";
+  // Beispieldatensatz laden: in lokaler Entwicklung ODER wenn auf einer Umgebung
+  // explizit freigeschaltet (NEXT_PUBLIC_ENABLE_TESTDATA=1, z. B. Staging) —
+  // niemals in Produktion (dort ist das Flag nicht gesetzt).
+  const isDev =
+    process.env.NODE_ENV !== "production" ||
+    process.env.NEXT_PUBLIC_ENABLE_TESTDATA === "1";
   async function handleLoadSample() {
     const { flexcoverSampleData } = await import("@/lib/forms/flexcover/sample-data");
     setFormValues(flexcoverSampleData);

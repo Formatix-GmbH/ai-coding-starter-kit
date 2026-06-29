@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { logoutAction } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getDraftRow } from "@/lib/drafts/store";
 import { isDraftExpired } from "@/lib/drafts/expiry";
 import { flexcoverDefinition } from "@/lib/forms/flexcover/definition";
 import { DraftListItem } from "@/components/flexcover/DraftListItem";
-import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -41,14 +39,9 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{greeting}</h1>
-          <p className="text-sm text-muted-foreground">Deine Anträge im Überblick</p>
-        </div>
-        <form action={logoutAction}>
-          <LogoutButton />
-        </form>
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold">{greeting}</h1>
+        <p className="text-sm text-muted-foreground">Deine Anträge im Überblick</p>
       </div>
 
       <Card className="mb-6">
