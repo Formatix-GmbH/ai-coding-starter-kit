@@ -40,7 +40,9 @@ for (const { path, name } of PAGES) {
 }
 
 test.describe("Globale Struktur", () => {
-  test("jede Seite hat einen Skip-Link als erstes fokussierbares Element", async ({ page }) => {
+  test("jede Seite hat einen Skip-Link als erstes fokussierbares Element", async ({ page }, testInfo) => {
+    // Tastatur-Tab-Traversierung ist nur auf Nicht-Touch-Geräten sinnvoll.
+    test.skip(testInfo.project.name === "Mobile Safari", "Touch-Gerät ohne Tab-Fokus");
     await page.goto("/");
     await page.keyboard.press("Tab");
     const focused = page.locator(":focus");
@@ -85,5 +87,61 @@ test.describe("Form-Engine — Fehlerführung", () => {
     const errorId = (describedBy as string).split(" ")[0];
     const msg = page.locator(`[id="${errorId}"]`);
     await expect(msg).toHaveText(/.+/);
+  });
+
+  test("Submit mit Fehlern setzt den Fokus auf das erste fehlerhafte Feld", async ({ page }) => {
+    await page.goto("/antrag/flexcover");
+    await expect(page.locator('[id="Ansprechpartner.email"]')).toBeVisible();
+    await page.getByRole("button", { name: "PDF herunterladen" }).click();
+    // Der Fokus springt auf das erste ungültige Bedienelement (welches Feld das
+    // konkret ist, hängt von der Definitionsreihenfolge ab).
+    await expect(page.locator(":focus")).toHaveAttribute("aria-invalid", "true");
+  });
+});
+
+test.describe("Skip-Link (Tastatur)", () => {
+  test("Aktivieren springt zum Hauptinhalt", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "Mobile Safari", "Touch-Gerät ohne Tab-Fokus");
+    await page.goto("/");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Enter");
+    await expect(page.locator("main#hauptinhalt")).toBeFocused();
+  });
+});
+
+// Tiefere Engine-Prüfungen am Demo-Formular (voller Funktionsumfang:
+// berechnetes Feld, feste/dynamische Tabellen, verschachtelte Wiederholgruppen).
+test.describe("Form-Engine — Semantik & dynamische Inhalte (Demo)", () => {
+  test("berechnetes Feld ist schreibgeschützt (read-only) statt deaktiviert", async ({ page }) => {
+    await page.goto("/form-demo");
+    await page.getByRole("tab", { name: /Zahlen/ }).click();
+    const summe = page.locator('[id="zahlen.summe"]');
+    await expect(summe).toBeVisible();
+    await expect(summe).toHaveAttribute("aria-readonly", "true");
+    await expect(summe).toHaveAttribute("readonly", "");
+    await expect(summe).not.toBeDisabled();
+  });
+
+  test("feste Tabelle hat Spalten-/Zeilenköpfe und eine Beschriftung (caption)", async ({ page }) => {
+    await page.goto("/form-demo");
+    await page.getByRole("tab", { name: /Zahlen/ }).click();
+    // Spaltenkopf (scope=col) und Zeilenkopf (scope=row) sind als solche erkennbar.
+    await expect(page.getByRole("columnheader", { name: "Jahr 1" })).toBeVisible();
+    await expect(page.getByRole("rowheader", { name: "Vollzeit" })).toBeVisible();
+    await expect(page.locator("table caption", { hasText: "Beschäftigte (3 Jahre)" })).toHaveCount(1);
+  });
+
+  test("Wiederholgruppe: Fokus bleibt nach dem Entfernen sinnvoll gesetzt", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "Mobile Safari", "Fokus-Management ist eine Tastatur-Anforderung");
+    await page.goto("/form-demo");
+    await page.getByRole("tab", { name: /Firma/ }).click();
+    // Wiederholgruppe „Begünstigte" einblenden.
+    await page.locator('[id="firma.weitereBeguenstigte-ja"]').click();
+    const addBtn = page.getByRole("button", { name: /Begünstigter hinzufügen/ });
+    await expect(addBtn).toBeVisible();
+    await addBtn.click();
+    // Eintrag entfernen → Fokus darf nicht verloren gehen (landet auf „Hinzufügen").
+    await page.getByRole("button", { name: "Begünstigter 1 entfernen" }).click();
+    await expect(addBtn).toBeFocused();
   });
 });

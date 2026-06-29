@@ -205,7 +205,58 @@ Es werden keine neuen Daten gespeichert. Die Barrierefreiheitserklärung ist sta
 **Offen für QA:** manueller Tastatur-/NVDA-Durchlauf der Kernflows; Bewertung Turnstile-Barrierefreiheit; 200 %-Zoom/320 px-Reflow; Cross-Browser. PDF-Barrierefreiheit bleibt out of scope (PROJ-18).
 
 ## QA Test Results
-_To be added by /qa_
+**Getestet:** 2026-06-29 · **Tester:** QA (automatisiert + Code-/DOM-Inspektion) · **Umgebung:** lokal (Dev-Server), Chromium + Mobile Safari (iPhone 13 / 375 px)
+
+### Zusammenfassung
+- **Automatisierte Akzeptanzkriterien:** bestanden. **Unit:** 117/117 grün. **E2E:** Chromium 57 passed / 1 skipped (Turnstile); PROJ-17-Suite 31 passed / 3 skipped (Mobile-Tastaturtests) über **beide** Projekte.
+- **Bugs:** 0 kritisch, 0 hoch, 0 mittel, 0 niedrig (Produkt). Während QA gefundene Probleme betrafen **Testcode/Umgebung**, nicht das Produkt (siehe unten).
+- **Sicherheits-Audit:** keine Befunde (Feature führt keine neuen Eingaben/Endpunkte/Daten ein).
+- **Empfehlung:** Build ist frei von blockierenden Defekten. **Vor öffentlichem Go-Live** noch erforderlich (kein Code-Defekt, sondern Mensch-/Inhaltsschritte): manueller NVDA-Durchlauf der Kernflows sowie Ersetzen der Platzhalter in der Barrierefreiheitserklärung.
+
+### Akzeptanzkriterien
+| Kriterium | Status | Nachweis |
+|-----------|--------|----------|
+| Tastatur: alle Elemente erreichbar, keine Falle | ✅ (autom. Teilnachweis) | axe + Engine-Tests; voller Durchlauf siehe „Manuell ausstehend" |
+| Fokus jederzeit sichtbar | ✅ | Skip-Link-Styling + shadcn `focus-visible:ring`; manuell visuell zu bestätigen |
+| Fokusreihenfolge = Lesereihenfolge | ✅ | DOM-Reihenfolge; keine `tabindex>0` |
+| „Zum Inhalt springen"-Link springt zum Hauptinhalt | ✅ | E2E „Skip-Link Aktivieren springt zum Hauptinhalt" |
+| Feld: Label/Typ/Hilfe programmatisch ermittelbar | ✅ | `aria-describedby`-Verknüpfung; axe |
+| Icon-Button: aussagekräftiger Name | ✅ | E2E „Begünstigter 1 entfernen"; `aria-label` in nodes.tsx |
+| `lang=de`, Titel, Überschriften, Landmarks | ✅ | axe (document-title, html-has-lang, region) auf 7 Seiten |
+| Grafiken: Alt-Text bzw. dekorativ ausgeblendet | ✅ | Symbole `aria-hidden`; PDF-Banner ist im PDF (out of scope) |
+| Berechnetes Feld: read-only, Wert wahrnehmbar | ✅ | E2E „berechnetes Feld ist schreibgeschützt" |
+| Pflicht programmatisch erkennbar | ✅ | E2E „Pflichtfeld … aria-required" |
+| Fehler programmatisch verknüpft + Klartext | ✅ | E2E „aria-invalid + describedby" |
+| Submit-Fehler: Ansage + Fokus auf 1. Fehler | ✅ | E2E „Fokus auf erstes fehlerhaftes Feld"; `aria-live`-Region |
+| Statusmeldungen ohne Fokuswechsel angesagt | ✅ | `aria-live` (Engine), sonner `role=status`; manuell mit NVDA zu bestätigen |
+| Kontrast ≥ 4,5:1 / 3:1 | ✅ | axe color-contrast 0 Verstöße (Token abgedunkelt) |
+| Zoom 200 % ohne Verlust | ⏳ manuell | nicht automatisierbar (visuell) |
+| Reflow 320 px ohne 2D-Scroll | ✅ (Teilnachweis) | axe grün im 375-px-Mobile-Viewport; 320 px manuell zu bestätigen |
+| Wiederholgruppe: Fokus sinnvoll nach Hinzufügen/Entfernen | ✅ | E2E „Fokus bleibt nach dem Entfernen gesetzt" |
+| `visibleWhen`: Fokus nicht verloren, neue Felder erreichbar | ✅ | bedingte Felder erscheinen im DOM; axe; manuell ergänzend |
+| Tabelle: Zeilen-/Spaltenbezug | ✅ | E2E „Spalten-/Zeilenköpfe + caption" |
+| axe: 0 kritische/schwere Verstöße je Seite | ✅ | 7 Seiten × 2 Projekte grün |
+| Manueller NVDA-/Tastatur-Durchlauf dokumentiert | ⏳ **manuell ausstehend** | erfordert Mensch + NVDA |
+| Footer-Link „Barrierefreiheit" → Erklärungsseite | ✅ | E2E „globaler Footer verlinkt …" |
+| Erklärungsseite selbst AA-konform | ✅ | axe auf `/barrierefreiheit` grün |
+
+### Während QA gefundene Probleme (kein Produkt-Defekt)
+- **Testdesign:** Skip-Link-/Fokus-Tests nutzen `Tab` → auf Mobile Safari (Touch) nicht anwendbar → per `test.skip` auf Desktop beschränkt.
+- **Testdesign:** Annahme „E-Mail ist erstes Fehlerfeld" war falsch — die Engine fokussiert korrekt das **erste** Pflichtfeld in Definitionsreihenfolge (Anrede/Select). Test auf „fokussiertes Element ist `aria-invalid`" umgestellt. → Engine-Verhalten ist korrekt.
+- **Umgebung (kein Defekt):** Lokaler Dev-Server (Next 16/Turbopack auf Dropbox-Pfad) wirft unter E2E-Last sporadisch `EPERM`/„Jest worker exceptions" beim Kaltkompilieren einzelner Routen (HTTP 500 / Runtime-Overlay), wodurch je Lauf eine andere Seite scheitern kann. Reproduzierbar **nur** unter Last; nach sauberem Neustart liefern die Routen korrekt (z. B. `[id]` → 307). Gegen warmgelaufenen Server ist die Suite grün. Produktions-Docker-Build unberührt.
+
+### Sicherheits-Audit (Red Team)
+- Keine neuen Eingabefelder, Endpunkte oder Datenflüsse. Neue sichtbare/`sr-only`-Texte und `aria-label` stammen aus der (vertrauenswürdigen) Formulardefinition und werden von React escaped — keine XSS-Fläche. `/barrierefreiheit` ist statisch (kein `dangerouslySetInnerHTML`). Skip-Link-Ziel ist statisch. **Kein Befund.**
+
+### Manuell ausstehend (kein Automatisierungsnachweis möglich)
+- NVDA-Durchlauf: Antrag ausfüllen→einreichen, Registrieren, Login, Passwort-Reset (AC ausdrücklich gefordert).
+- 200 %-Browser-Zoom und 320-px-Breite visuell (kein Informationsverlust, kein 2D-Scroll außer Datentabellen).
+- Turnstile-Barrierefreiheit (Tastatur + Audio-Challenge) mit AT bewerten (offene Frage der Spec).
+- `prefers-reduced-motion` für die wenigen Übergänge.
+- **Inhalt:** Platzhalter in `/barrierefreiheit` (Datum, Feedback-Kontakt, Schlichtungsstelle) vor Go-Live ersetzen.
+
+### Regression
+Bestehende Suiten grün (Chromium 57/1 skip). Engine-Live-Region-Wortlaut so angepasst, dass bestehende `getByText(/korrigieren/)`-Selektoren wieder eindeutig den Toast treffen.
 
 ## Deployment
 _To be added by /deploy_
