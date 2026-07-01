@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 // PROJ-18 — Neutrales Formular-Portal. Diese Tests setzen ein Deployment im
 // PORTAL-Modus voraus (NEXT_PUBLIC_BRAND=eforms, NEXT_PUBLIC_ACTIVE_FORMS=musterantrag).
@@ -22,6 +23,13 @@ test("Portal: FlexCover ist nicht erreichbar (404-gated)", async ({ page }) => {
   expect(resp?.status()).toBe(404);
 });
 
+test("Portal: Einreichungsliste erfordert Anmeldung (Auth-Guard)", async ({ page }) => {
+  test.skip(!(await portalActive(page)), "Kein Portal-Deployment");
+  await page.goto("/antrag/musterantrag/eingereicht");
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page).toHaveURL(/returnTo=.*musterantrag/);
+});
+
 test("Portal: Muster-Förderantrag ausfüllen → PDF herunterladen (anonym, clientseitig)", async ({ page }) => {
   test.skip(!(await portalActive(page)), "Kein Portal-Deployment");
   await page.goto("/antrag/musterantrag");
@@ -36,4 +44,16 @@ test("Portal: Muster-Förderantrag ausfüllen → PDF herunterladen (anonym, cli
   await page.getByRole("button", { name: "PDF herunterladen" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^musterantrag-.*\.pdf$/);
+});
+
+test("Portal: Muster-Antragsseite hat keine kritischen/schweren axe-Verstöße", async ({ page }, testInfo) => {
+  test.skip(!(await portalActive(page)), "Kein Portal-Deployment");
+  test.skip(testInfo.project.name === "Mobile Safari", "axe-Kernprüfung auf Desktop");
+  await page.goto("/antrag/musterantrag");
+  await expect(page.getByRole("button", { name: "Testdaten laden" })).toBeVisible();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const blocking = results.violations.filter((v) => v.impact === "critical" || v.impact === "serious");
+  expect(blocking, blocking.map((v) => `${v.id} (${v.impact}): ${v.help}`).join("\n")).toEqual([]);
 });

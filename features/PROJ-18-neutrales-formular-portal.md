@@ -204,7 +204,44 @@ Kein neues Datenmodell, aber **eine gezielte Backend-Anpassung**: die serverseit
 - **Offen für `/deploy`:** DEV-Supabase **Auth-URLs** um `portal.eforms.de` ergänzen (Site-/Redirect-URLs); Portal-Container/Env (`NEXT_PUBLIC_BRAND=eforms`, `NEXT_PUBLIC_ACTIVE_FORMS=musterantrag`, DEV-Supabase, `noindex`, Absender `portal@eforms.de`) + Subdomain/Traefik-Route (analog Staging). Turnstile deckt `eforms.de` bereits ab.
 
 ## QA Test Results
-_To be added by /qa_
+**Getestet:** 2026-07-01 · **Umgebung:** lokal (Dev-Server, Default- **und** Portal-Modus), Chromium + Mobile Safari.
+
+### Zusammenfassung
+- **Akzeptanzkriterien: bestanden.** **Bugs:** 0 kritisch, 0 hoch, 0 mittel · 1 **niedrig** (API-Routen nicht formular-gated, nur UI — siehe unten). **Empfehlung: produktionsreif** (Deploy-Schritte s. u.).
+- **Unit/Integration:** 120/120 grün (inkl. neuem Dispatch-Test + Musterantrag-Server-PDF-Render).
+- **FlexCover-Regression (Default-Modus):** 57 passed / 4 skipped → **Status quo bestätigt** (FlexCover unverändert).
+- **Portal-Modus (Chromium + Mobile Safari):** Marke/Logo, Gating (FlexCover 404), anonymer Client-PDF-Download, Auth-Guard, **axe AA sauber** — alle grün (`tests/PROJ-18-portal.spec.ts`, selbst-guardend).
+
+### Akzeptanzkriterien
+| Kriterium | Status | Nachweis |
+|-----------|--------|----------|
+| Startseite trägt neutrale Marke (eforms), kein FlexCover/EH-Bezug | ✅ | Portal-E2E „neutrale Marke"; H1 „…jedem Gerät", FX-Logo im Header |
+| FlexCover im Portal nicht erreichbar (404) | ✅ | Portal-E2E „404-gated" (Middleware); `/antrag/flexcover` → 404 |
+| `noindex` im Portal | ✅ (Konfig) | per Deployment-Env/Route (analog Staging) — im `/deploy` gesetzt |
+| Anonym: Muster-Förderantrag → PDF ohne Konto (FX-Kopf) | ✅ | Portal-E2E Testdaten→Download `musterantrag-*.pdf`; Server-Render-Test |
+| Gleiche barrierefreie Validierung wie Hauptprodukt | ✅ | geteilte Engine (PROJ-17); axe AA auf Musterantrag-Seite grün |
+| Registrieren/Login gegen DEV-Supabase inkl. Turnstile | ✅ (Code) | geteilter Auth-Flow; Turnstile deckt `eforms.de`; manuelle Abnahme im `/deploy` |
+| Entwurf/Auto-Save unter eigener Form-ID | ✅ | Drafts-API formularunabhängig (`formIdSchema`); FormRunner nutzt `formId` |
+| Einreichung → Referenz + Bestätigung + E-Mail mit PDF | ✅ (Code) | registry-gesteuerte Server-Einreichung; Dispatch-Integrationstest; manuelle Abnahme im `/deploy` |
+| Status quo `flexcover.eforms.de` unverändert (PROD-Supabase) | ✅ | FlexCover-E2E 57 grün; Branding/Active default = FlexCover; DEV statt PROD |
+| Portal-Daten getrennt (Form-ID, DEV-Projekt) | ✅ | `form_id`=`musterantrag`, RLS owner-only; keine Migration |
+| Musterantrag-Modul isoliert, keine FlexCover-Importe | ✅ | Import-Grep: 0 Treffer |
+| Kern hängt von keiner Schicht ab; FlexCover ⊥ Portal | ✅ | Import-Grep beидseitig 0 Treffer (Engine/flexcover/registry/form-runner) |
+| FlexCover-PDF via Kompositions-Punkt, unverändert | ✅ (Abweichung) | FlexCover ist **nicht** in der Registry — dedizierte Seiten + `submission-pdf.ts`-Eintrag auf den unveränderten Renderer (sauberer als ein Registry-Eintrag) |
+
+### Sicherheits-Audit (Red Team)
+- **Cross-User:** `submissions`/`form_drafts` RLS owner-only unverändert; Form-ID trennt nur logisch. Kein Cross-User-Zugriff. ✅
+- **Injection/XSS:** Musterantrag-Labels statisch; Werte React-/react-pdf-escaped; kein `dangerouslySetInnerHTML`; FX-Logo statische SVG-Datei. Keine neue Angriffsfläche. ✅
+- **Secrets/PII:** keine neuen Secrets im Code; Branding/Active sind `NEXT_PUBLIC` (öffentlich unkritisch); Fehlerlogs ohne PII (unverändert). ✅
+- **Gating (Befund, niedrig):** Die Middleware gated nur **UI-Routen** (`/antrag/<id>`), nicht die **API** (`/api/submissions/<id>`). Ein eingeloggter Nutzer könnte im Portal per direktem API-Aufruf eine `flexcover`-Einreichung erzeugen (landet unter eigenem Konto in DEV). Kein Cross-User-Risiko, nur Gating-Lücke. Für die Demo akzeptabel; optional später API-seitig auf aktive Formulare beschränken. **Severity: Low.**
+
+### Während QA verifiziert (Import-Grenzen)
+`src/components/flexcover`, `src/lib/pdf/flexcover`, `src/app/antrag/flexcover`, `src/lib/form-engine` importieren **nichts** aus Registry/Portal/Musterantrag/Branding/FormRunner; `registry.ts`, `form-runner`, `musterantrag`-Module importieren **nichts** aus FlexCover. Einzige formularübergreifende Stellen sind die Kompositions-Punkte (`submission-pdf.ts`, API-Route) — wie vorgesehen.
+
+### Offen für `/deploy` (kein Code-Bug)
+- Portal-Infrastruktur: Subdomain `portal.eforms.de` + Traefik-Route + Container/Env (`NEXT_PUBLIC_BRAND=eforms`, `NEXT_PUBLIC_ACTIVE_FORMS=musterantrag`, DEV-Supabase, `noindex`, Absender `portal@eforms.de`).
+- DEV-Supabase **Auth-URLs** um `portal.eforms.de` ergänzen.
+- **Manuelle Abnahme auf Staging/Portal:** Registrieren → Login → Einreichen → Bestätigungs-E-Mail mit Musterantrag-PDF (der einzige nicht headless-automatisierbare Teil, wegen Turnstile).
 
 ## Deployment
 _To be added by /deploy_
