@@ -32,10 +32,11 @@
 | PROJ-15 | Staging-Umgebung | Deployed | [PROJ-15](PROJ-15-staging-umgebung.md) | 2026-06-24 |
 | PROJ-16 | Bot-Schutz mit Cloudflare Turnstile | Deployed | [PROJ-16](PROJ-16-turnstile-botschutz.md) | 2026-06-28 |
 | PROJ-17 | Barrierefreiheit (WCAG 2.1 AA) | Deployed | [PROJ-17](PROJ-17-barrierefreiheit-wcag.md) | 2026-06-29 |
+| PROJ-18 | Neutrales Formular-Portal (portal.eforms.de) | Planned | [PROJ-18](PROJ-18-neutrales-formular-portal.md) | 2026-07-01 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-18
+## Next Available ID: PROJ-19
 
 ## Empfohlene Build-Reihenfolge
 PROJ-1 → PROJ-2 → **PROJ-3 (Engine)** → **PROJ-11 (FlexCover-Definition)** → PROJ-4 → PROJ-5 → PROJ-6 → P1/P2
