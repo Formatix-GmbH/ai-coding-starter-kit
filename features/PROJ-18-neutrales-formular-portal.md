@@ -51,9 +51,12 @@ Das Portal `portal.eforms.de` macht die Lösung **herstellerneutral** vorführba
 - [ ] Angenommen das Portal ist live, wenn `flexcover.eforms.de` aufgerufen wird, dann verhält es sich unverändert (Branding/Route/Funktionen) und nutzt weiterhin das **PROD**-Supabase-Projekt.
 - [ ] Angenommen Portal-Nutzer legen Daten an, wenn diese gespeichert werden, dann landen sie im **DEV**-Projekt (nicht PROD) und sind per eigener Form-ID von FlexCover-Daten getrennt.
 
-**Extraktions-Freundlichkeit (Architektur-Nachweis)**
+**Extraktions-Freundlichkeit / Zwei-Wege-Trennbarkeit (Architektur-Nachweis)**
 - [ ] Angenommen ein Entwickler betrachtet den Musterantrag, wenn er dessen Code prüft, dann liegen Definition, PDF-Layout und Beispieldaten in einem **eigenen, isolierten Modul** und importieren keinen FlexCover-spezifischen Code.
 - [ ] Angenommen das Portal wird gebrandet, wenn Portal-Name/Logo gesetzt werden, dann geschieht das über **Konfiguration** (nicht über verstreute Hardcodes im Code).
+- [ ] Angenommen ein Entwickler prüft die Importe, wenn er das **FlexCover-Modul** betrachtet, dann importiert es **nichts aus der Portal-/Registry-Schicht** (FlexCover bleibt unabhängig herauslösbar).
+- [ ] Angenommen ein Entwickler prüft den **gemeinsamen Kern** (Engine, Auth-/Entwurf-/Einreichungs-Plumbing, PDF-Kern), wenn er dessen Importe betrachtet, dann hängt er **von keiner der beiden Schichten** (FlexCover, Portal) ab.
+- [ ] Angenommen der Registry-Eintrag für FlexCover existiert, wenn eine Einreichung serverseitig gerendert wird, dann zeigt er auf das **unveränderte FlexCover-PDF-Modul** (Indirektion ist mechanisch entfernbar, kein Umbau).
 
 ## Edge Cases
 - **Geteilte DEV-Auth:** ein auf Staging registrierter Nutzer kann sich auch im Portal anmelden (gleiches DEV-Projekt) — für die Demo akzeptiert; keine Datenvermischung dank Form-ID.
@@ -79,6 +82,8 @@ Falls die Demos ankommen und echte Kunden folgen: Das Produkt (Engine + generisc
 - [ ] Eigene **Rechtstexte** fürs Portal (Datenschutz/Barrierefreiheit) — Platzhalter wie im Hauptprodukt, aber neutral?
 - [ ] **Absender-Adresse** für Portal-Bestätigungs-Mails (Vorschlag: `portal@eforms.de`, im DEV/Resend).
 - [ ] Konkreter Umfang/Inhalt des generischen Musterantrags (Abschnitte/Felder) — Detailentwurf in `/frontend`.
+- [ ] **Portal-Deploy-Quelle:** `main` (stabil, empfohlen) vs. `develop` (aktuellste Stände) — bei Bedarf im `/deploy`-Schritt festlegen.
+- [ ] **Migriert FlexCover später auf den generischen Weg** (dann ist FlexCover „nur noch ein Registry-Eintrag") — bewusst NICHT jetzt (Status quo); als Option für nach dem EH-Test vormerken.
 
 ## Decision Log
 
@@ -100,12 +105,75 @@ Falls die Demos ankommen und echte Kunden folgen: Das Produkt (Engine + generisc
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| FlexCover-Seiten unangetastet lassen; neuer generischer `/antrag/<formular>/…`-Weg für weitere Formulare | Statischer Routen-Vorrang schützt den EH-Test bausteinseitig; der generische Teil ist zugleich die Extraktions-Naht | 2026-07-01 |
+| Form-Registry als einziger Katalog (ID → Definition, PDF-Layout, Beispieldaten, Einstellungen) | Formulare werden registriert statt im Code verstreut; ermöglicht Isolation + späteren Fork | 2026-07-01 |
+| Aktive-Formulare-Gating zentral & per Konfiguration (nicht in Formularkomponenten) | FlexCover im Portal per Config auf 404, ohne dessen Code zu ändern | 2026-07-01 |
+| Branding per Env, Default = heutige FlexCover-Werte | Eine Codebasis, zwei Erscheinungsbilder; Prod-Optik bleibt unverändert | 2026-07-01 |
+| `musterantrag` als isoliertes Modul (Definition + eigenes PDF-Layout mit FX-Logo + Beispieldaten), ohne FlexCover-Importe | reale Trennlinie für spätere Extraktion | 2026-07-01 |
+| Keine DB-Migration; Wiederverwendung `form_drafts`/`submissions` über `form_id`; DEV-Supabase | schnell, risikoarm, Trennung rein über Form-ID; PROD unberührt | 2026-07-01 |
+| Serverseitige Einreichung (PDF/E-Mail) registry-gesteuert statt FlexCover-hardcodiert | additiv; FlexCover-Ergebnis bleibt identisch, weitere Formulare funktionieren | 2026-07-01 |
+| Seiteneffektfreies PDF-Helfer-Muster beibehalten (`@/lib/pdf/filename`) | Lektion PROD-1: Server darf nicht aus dem Browser-Font-registrierenden `@/lib/pdf` importieren | 2026-07-01 |
+| Portal = eigener Container/Env (gleiches Image), analog Staging (PROJ-15); Deploy-Quelle **`main`** (empfohlen) | stabile Demos; gleiche Basis wie Prod, nur andere Env (DEV-Supabase, Branding, aktive Formulare) | 2026-07-01 |
+| Sicherheitsnetz = bestehende FlexCover-E2E müssen auf Staging grün bleiben | objektiver Nachweis „Status quo unverändert" vor jedem Prod-Deploy | 2026-07-01 |
+| **Zwei-Wege-Trennbarkeit als Invariante:** Kern hängt von keiner Schicht ab; FlexCover- und Portal-Schicht nie voneinander; FlexCover bleibt direkt verdrahtet (nicht über Registry) | ermöglicht später *beide* Extraktionen (Produkt-Fork **und** eigenständiges FlexCover für EH) als mechanischen Schritt statt Rewrite; als Import-Grenze prüfbar (Abnahmekriterium) | 2026-07-01 |
+| **Baseline-Tag `flexcover-baseline-2026-07-01`** auf dem Stand vor PROJ-18 gesetzt (auf `main`) | garantierte „genau wie heute"-Momentaufnahme des FlexCover-Stacks für einen EH-Deliverable, unabhängig von PROJ-18 | 2026-07-01 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Grundsatz
+Wir bauen die **Plattform-Naht** ein, ohne FlexCover anzufassen. Der Trick: FlexCover behält seine **eigenen, dedizierten Seiten** (bleiben unverändert → Status quo bausteinseitig garantiert), und für **alle weiteren Formulare** entsteht ein **generischer, registry-gesteuerter Weg**. Genau dieser generische Teil ist später die saubere Abtrennungslinie für ein eigenes Produkt-Repo. Es sind **keine neuen Datentabellen** nötig.
+
+### A) Was wird gebaut (Änderungs-Landkarte)
+```
+Formular-Registry (neu, zentraler Katalog)
+└── je Formular: ID, Titel, Definition, PDF-Layout, Beispieldaten, Einstellungen
+    ├── flexcover       (Eintrag zeigt auf bestehende Module – bleibt wie es ist)
+    └── musterantrag    (neues, isoliertes Modul: Definition + eigenes PDF + Beispieldaten)
+
+Formular-Auslieferung
+├── FlexCover: bestehende Seiten /antrag/flexcover/…      (UNVERÄNDERT)
+└── Generischer Weg /antrag/<formular>/…                  (NEU, registry-gesteuert)
+    → rendert Engine + PDF-/Einreichungs-Verdrahtung anhand des Registry-Eintrags
+
+Aktive-Formulare-Gating (neu, pro Deployment per Konfiguration)
+└── zentrale Zugangsschranke: nicht-aktive Formulare → 404
+    (Portal aktiviert nur „musterantrag" → FlexCover dort nicht erreichbar,
+     ohne FlexCover-Code zu ändern)
+
+Branding per Konfiguration (Env)
+├── Portal-Name + FX-Logo (Kopfzeile, Startseite, Metadaten, PDF-Kopf)
+└── Default = heutiges „FlexCover Antragsportal" → Prod-Deployment optisch unverändert
+
+Serverseitige Einreichung (Anpassung)
+└── PDF/E-Mail beim Einreichen wird registry-gesteuert (Formular liefert sein PDF-Layout)
+    statt FlexCover fest zu importieren — additiv, FlexCover-Ergebnis bleibt identisch
+
+Infrastruktur (analog Staging, PROJ-15)
+└── portal.eforms.de: eigener Container (gleiches Image), eigene Traefik-Route,
+    Cloudflare-DNS, Env: aktive Formulare = musterantrag, Branding = eforms,
+    DEV-Supabase, noindex, Absender portal@eforms.de
+```
+
+### B) Datenmodell (unverändert)
+Es entstehen **keine neuen Tabellen und keine Migration**. Entwürfe und Einreichungen liegen bereits in `form_drafts`/`submissions`, jeweils **nach `form_id` getrennt** (RLS: nur eigene Daten). Der Musterantrag bekommt schlicht die Form-ID **`musterantrag`** → seine Daten liegen sauber neben `flexcover`. Das Portal nutzt das **DEV-Supabase-Projekt**; PROD (Euler Hermes) wird nicht berührt.
+
+### C) Tech-Entscheidungen (für PM begründet)
+- **FlexCover unangetastet + neuer generischer Weg (statt FlexCover umzubauen):** schützt den laufenden EH-Test bausteinseitig und liefert zugleich exakt die wiederverwendbare Naht, die ein späterer Produkt-Fork mitnimmt. Das Beste aus „Status quo" und „extraktions-freundlich".
+- **Registry als einziger Ort, der Formulare kennt:** neue Formulare werden *registriert*, nicht in den Code eingestreut. Das isolierte `musterantrag`-Modul importiert nichts FlexCover-Spezifisches → die Trennlinie fürs spätere Repo ist real.
+- **Gating zentral & konfigurationsgesteuert (nicht in Formularkomponenten):** so ist FlexCover im Portal per Konfiguration unsichtbar, ohne dessen Code zu ändern; Prod aktiviert weiterhin nur FlexCover.
+- **Branding per Env mit Default = heute:** eine Codebasis, zwei Erscheinungsbilder. Prod behält sein Aussehen, weil der Default die heutigen Werte sind.
+- **DEV-Supabase mitnutzen, keine Migration:** schnellster, risikoärmster Weg; Trennung rein über `form_id`.
+- **Sicherheitsnetz = bestehende E2E-Suite:** FlexCover-Tests (PROJ-5/6/11 …) müssen auf **Staging grün** bleiben, bevor überhaupt etwas nach Prod geht — das ist der objektive Nachweis „Status quo unverändert".
+
+### D) Backend-Bedarf
+Kein neues Datenmodell, aber **eine gezielte Backend-Anpassung**: die serverseitige Einreichung (PDF-Erzeugung + Bestätigungs-E-Mail) muss das PDF-Layout **aus der Registry** beziehen statt FlexCover fest zu verdrahten. Zusätzlich: DEV-Supabase-**Auth-URLs** um `portal.eforms.de` ergänzen (additiv). Deshalb nach `/frontend` noch ein `/backend`-Schritt.
+
+### E) Abhängigkeiten (zu installieren)
+- **Keine neuen Laufzeit-Pakete.** Alles wird wiederverwendet (Engine, PDF, Auth, Turnstile, Resend). Aufwand liegt in Registry/Generalisierung, Branding-Konfiguration, dem neuen Musterantrag-Modul und der Portal-Infrastruktur.
+- Neu ist **Infrastruktur**, kein npm-Paket: DNS-Eintrag `portal.eforms.de`, Traefik-Route, Portal-Container/Env (analog Staging).
 
 ## QA Test Results
 _To be added by /qa_
