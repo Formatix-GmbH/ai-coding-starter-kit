@@ -14,8 +14,7 @@ import { deleteDraftRow } from "@/lib/drafts/store";
 import { MAX_SUBMISSION_BYTES } from "@/lib/submissions/constants";
 import { submissionPayloadSchema } from "@/lib/validation/submission";
 import { formIdSchema } from "@/lib/validation/draft";
-import { renderFlexcoverPdfBuffer } from "@/lib/pdf/server";
-import { flexcoverPdfFilename } from "@/lib/pdf/filename";
+import { renderSubmissionPdf, submissionPdfFilename } from "@/lib/pdf/submission-pdf";
 import { sendSubmissionEmail } from "@/lib/email/resend";
 import { verifyTurnstile, clientIpFromHeaders } from "@/lib/turnstile/verify";
 import type { FormValues } from "@/lib/form-engine/types";
@@ -80,15 +79,16 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   // 2) PDF erzeugen + per E-Mail versenden (best-effort; Einreichung bleibt gültig).
+  //    Das PDF-Layout wird registry-/formularabhängig aufgelöst (PROJ-18).
   let emailSent = false;
   try {
-    if (user.email) {
-      const pdf = await renderFlexcoverPdfBuffer(values, submission.reference);
+    const pdf = user.email ? await renderSubmissionPdf(formId.data, values, submission.reference) : null;
+    if (user.email && pdf) {
       emailSent = await sendSubmissionEmail({
         to: user.email,
         reference: submission.reference,
         pdf,
-        filename: flexcoverPdfFilename(new Date(), submission.reference),
+        filename: submissionPdfFilename(formId.data, submission.reference),
       });
     }
   } catch (err) {

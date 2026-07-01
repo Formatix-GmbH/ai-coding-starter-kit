@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getSubmissionRow } from "@/lib/submissions/store";
 import { isSubmissionExpired } from "@/lib/submissions/expiry";
 import { submissionIdSchema } from "@/lib/validation/submission";
-import { renderFlexcoverPdfBuffer } from "@/lib/pdf/server";
-import { flexcoverPdfFilename } from "@/lib/pdf/filename";
+import { formIdSchema } from "@/lib/validation/draft";
+import { renderSubmissionPdf, submissionPdfFilename } from "@/lib/pdf/submission-pdf";
 import { sendSubmissionEmail } from "@/lib/email/resend";
 
 export const runtime = "nodejs";
@@ -16,7 +16,11 @@ export const runtime = "nodejs";
 type Params = { params: Promise<{ formId: string; submissionId: string }> };
 
 export async function POST(_req: NextRequest, { params }: Params) {
-  const { submissionId } = await params;
+  const { formId: rawFormId, submissionId } = await params;
+  const formId = formIdSchema.safeParse(rawFormId);
+  if (!formId.success) {
+    return NextResponse.json({ error: "Ungültige Formular-ID" }, { status: 400 });
+  }
   const id = submissionIdSchema.safeParse(submissionId);
   if (!id.success) {
     return NextResponse.json({ error: "Ungültige Einreichungs-ID" }, { status: 400 });
@@ -48,13 +52,15 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
   let emailSent = false;
   try {
-    const pdf = await renderFlexcoverPdfBuffer(submission.data, submission.reference);
-    emailSent = await sendSubmissionEmail({
-      to: user.email,
-      reference: submission.reference,
-      pdf,
-      filename: flexcoverPdfFilename(new Date(), submission.reference),
-    });
+    const pdf = await renderSubmissionPdf(formId.data, submission.data, submission.reference);
+    if (pdf) {
+      emailSent = await sendSubmissionEmail({
+        to: user.email,
+        reference: submission.reference,
+        pdf,
+        filename: submissionPdfFilename(formId.data, submission.reference),
+      });
+    }
   } catch (err) {
     console.error(
       "[submissions] Resend PDF/E-Mail-Schritt fehlgeschlagen:",

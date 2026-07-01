@@ -19,6 +19,9 @@ vi.mock("@/lib/drafts/store", () => ({
 vi.mock("@/lib/pdf/server", () => ({
   renderFlexcoverPdfBuffer: vi.fn(async () => Buffer.from("%PDF-fake")),
 }));
+vi.mock("@/lib/pdf/musterantrag/server", () => ({
+  renderMusterantragPdfBuffer: vi.fn(async () => Buffer.from("%PDF-muster")),
+}));
 vi.mock("@/lib/email/resend", () => ({
   sendSubmissionEmail: vi.fn(async () => true),
 }));
@@ -31,6 +34,7 @@ import { POST } from "./route";
 import * as store from "@/lib/submissions/store";
 import * as drafts from "@/lib/drafts/store";
 import * as pdf from "@/lib/pdf/server";
+import * as muster from "@/lib/pdf/musterantrag/server";
 import * as email from "@/lib/email/resend";
 import * as turnstile from "@/lib/turnstile/verify";
 import type { SubmissionRow } from "@/lib/submissions/types";
@@ -66,6 +70,7 @@ beforeEach(() => {
   vi.mocked(store.insertSubmissionRow).mockResolvedValue(submission());
   vi.mocked(drafts.deleteDraftRow).mockResolvedValue(undefined);
   vi.mocked(pdf.renderFlexcoverPdfBuffer).mockResolvedValue(Buffer.from("%PDF-fake"));
+  vi.mocked(muster.renderMusterantragPdfBuffer).mockResolvedValue(Buffer.from("%PDF-muster"));
   vi.mocked(email.sendSubmissionEmail).mockResolvedValue(true);
   vi.mocked(turnstile.verifyTurnstile).mockResolvedValue(true);
 });
@@ -112,6 +117,16 @@ describe("POST /api/submissions/[formId]", () => {
     expect(store.insertSubmissionRow).toHaveBeenCalledOnce();
     expect(email.sendSubmissionEmail).toHaveBeenCalledOnce();
     expect(drafts.deleteDraftRow).toHaveBeenCalledWith(expect.anything(), "flexcover");
+  });
+
+  it("dispatcht das PDF-Layout nach Formular (musterantrag → eigenes Layout)", async () => {
+    // PROJ-18: dieselbe Route bedient weitere Formulare registry-gesteuert.
+    const res = await POST(postReq({ data: { a: 1 } }), params("musterantrag"));
+    expect(res.status).toBe(200);
+    expect(muster.renderMusterantragPdfBuffer).toHaveBeenCalledOnce();
+    expect(pdf.renderFlexcoverPdfBuffer).not.toHaveBeenCalled();
+    expect(email.sendSubmissionEmail).toHaveBeenCalledOnce();
+    expect(drafts.deleteDraftRow).toHaveBeenCalledWith(expect.anything(), "musterantrag");
   });
 
   it("500, wenn die Protokollierung scheitert — keine E-Mail, kein Entwurf-Leeren", async () => {

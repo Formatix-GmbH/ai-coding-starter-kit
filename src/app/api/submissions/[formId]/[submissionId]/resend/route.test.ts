@@ -15,6 +15,9 @@ vi.mock("@/lib/submissions/store", () => ({
 vi.mock("@/lib/pdf/server", () => ({
   renderFlexcoverPdfBuffer: vi.fn(async () => Buffer.from("%PDF-fake")),
 }));
+vi.mock("@/lib/pdf/musterantrag/server", () => ({
+  renderMusterantragPdfBuffer: vi.fn(async () => Buffer.from("%PDF-muster")),
+}));
 vi.mock("@/lib/email/resend", () => ({
   sendSubmissionEmail: vi.fn(async () => true),
 }));

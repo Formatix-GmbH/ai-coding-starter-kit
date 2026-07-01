@@ -194,7 +194,14 @@ Kein neues Datenmodell, aber **eine gezielte Backend-Anpassung**: die serverseit
 - **Default-Modus** (= Prod): Startseite/Branding = FlexCover unverändert; `/antrag/flexcover` 200; `/antrag/musterantrag` 404 (gated). **FlexCover-E2E-Regression: 57 passed / 1 skipped (grün)** → Status quo bestätigt.
 - **Portal-Modus** (`NEXT_PUBLIC_BRAND=eforms`, `NEXT_PUBLIC_ACTIVE_FORMS=musterantrag`): eforms-Marke + FX-Logo; `/antrag/musterantrag` 200; `/antrag/flexcover` 404. **`tests/PROJ-18-portal.spec.ts` (3 passed)** inkl. End-to-End Testdaten→Client-PDF-Download; Tests sind selbst-guardend (überspringen im Default-Modus).
 
-**Offen für `/backend`:** Die serverseitige Einreichung (`POST /api/submissions/[formId]` erzeugt Server-PDF + E-Mail) ist noch FlexCover-gekoppelt → registry-gesteuert generalisieren, damit Einreichung/Bestätigung/E-Mail für `musterantrag` funktionieren. Bis dahin funktionieren anonymes Ausfüllen, Client-PDF und Entwürfe/Auto-Save; die Einreichung selbst noch nicht.
+## Implementierungsnotizen (Backend)
+**Stand:** 2026-07-01 — serverseitige Einreichung registry-gesteuert, `musterantrag` voll funktionsfähig.
+
+- **Kein neues Datenmodell / keine Migration:** `form_drafts`/`submissions` sind bereits nach `form_id` getrennt; `formIdSchema` (Regex `^[a-z0-9_-]{1,64}$`) akzeptiert `musterantrag`. Die **Entwurf-API** (`/api/drafts/[formId]`) war schon formularunabhängig → **unverändert**.
+- **Server-PDF-Resolver** `src/lib/pdf/submission-pdf.ts` (Kompositions-Punkt): bildet `formId → Node-Renderer + Dateiname` ab (`flexcover` → unveränderter FlexCover-Renderer; `musterantrag` → neuer `src/lib/pdf/musterantrag/server.ts`). Einzige Stelle, die beide Formulare kennt — die Formular-Schichten importieren einander nicht.
+- **Routen generalisiert (additiv, FlexCover-Verhalten identisch):** `POST /api/submissions/[formId]` und `…/[submissionId]/resend` nutzen jetzt `renderSubmissionPdf`/`submissionPdfFilename` statt fester FlexCover-Importe. Für `flexcover` dispatcht der Resolver auf denselben Renderer/Dateinamen wie zuvor → keine Verhaltensänderung. Resend validiert zusätzlich die `formId`.
+- **Verifikation:** `tsc`/ESLint sauber; **118 Unit/Integration grün** (inkl. neuem Dispatch-Test „musterantrag → eigenes Layout" und unveränderten FlexCover-Fällen); `renderMusterantragPdfBuffer` rendert serverseitig ein gültiges PDF (mit Beispieldaten **und** leeren Werten).
+- **Offen für `/deploy`:** DEV-Supabase **Auth-URLs** um `portal.eforms.de` ergänzen (Site-/Redirect-URLs); Portal-Container/Env (`NEXT_PUBLIC_BRAND=eforms`, `NEXT_PUBLIC_ACTIVE_FORMS=musterantrag`, DEV-Supabase, `noindex`, Absender `portal@eforms.de`) + Subdomain/Traefik-Route (analog Staging). Turnstile deckt `eforms.de` bereits ab.
 
 ## QA Test Results
 _To be added by /qa_
