@@ -1,8 +1,10 @@
 # PROJ-18: Neutrales Formular-Portal (portal.eforms.de)
 
-## Status: Planned
+## Status: Approved
 **Created:** 2026-07-01
 **Last Updated:** 2026-07-01
+
+> **Deploy-Bedingungen (kein Code-Bug):** Portal-Infra (Subdomain/Container/Env), DEV-Supabase-Auth-URLs für `portal.eforms.de`, manuelle Konto-/Einreichungs-Abnahme (Turnstile). Optionale Nacharbeit: API-seitiges Formular-Gating (Low-Befund).
 
 ## Dependencies
 - Requires: PROJ-3 (Form Engine), PROJ-2 (Auth), PROJ-4 (Entwürfe/Auto-Save), PROJ-5 (PDF), PROJ-6 (Einreichung & Bestätigung/E-Mail), PROJ-16 (Turnstile), PROJ-17 (Barrierefreiheit)
