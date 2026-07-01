@@ -1,28 +1,24 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { branding } from "@/lib/branding";
 
 export default function Home() {
+  const { home } = branding;
   return (
     <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col items-center justify-center gap-6 px-4 py-16 text-center">
-      <h1 className="text-3xl font-semibold sm:text-4xl">
-        FlexCover-Förderantrag — online ausfüllen
-      </h1>
-      <p className="text-muted-foreground">
-        Fülle den Antrag bequem im Browser aus und lade dein PDF herunter —
-        ganz ohne Anmeldung. Ein Konto brauchst du nur, wenn du
-        zwischenspeichern oder dir das PDF per E-Mail schicken lassen möchtest.
-      </p>
+      <h1 className="text-3xl font-semibold sm:text-4xl">{home.title}</h1>
+      <p className="text-muted-foreground">{home.subtitle}</p>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button asChild size="lg">
-          <Link href="/antrag/flexcover">Antrag starten</Link>
+          <Link href={home.primaryHref}>{home.primaryLabel}</Link>
         </Button>
-        <Button asChild size="lg" variant="outline">
-          <Link href="/registrieren">Konto erstellen</Link>
-        </Button>
+        {home.secondaryHref && home.secondaryLabel && (
+          <Button asChild size="lg" variant="outline">
+            <Link href={home.secondaryHref}>{home.secondaryLabel}</Link>
+          </Button>
+        )}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Kostenlos und ohne Anmeldung — Ihre Eingaben bleiben im Browser.
-      </p>
+      {home.note && <p className="text-xs text-muted-foreground">{home.note}</p>}
     </div>
   );
 }

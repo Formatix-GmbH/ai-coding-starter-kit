@@ -175,6 +175,27 @@ Kein neues Datenmodell, aber **eine gezielte Backend-Anpassung**: die serverseit
 - **Keine neuen Laufzeit-Pakete.** Alles wird wiederverwendet (Engine, PDF, Auth, Turnstile, Resend). Aufwand liegt in Registry/Generalisierung, Branding-Konfiguration, dem neuen Musterantrag-Modul und der Portal-Infrastruktur.
 - Neu ist **Infrastruktur**, kein npm-Paket: DNS-Eintrag `portal.eforms.de`, Traefik-Route, Portal-Container/Env (analog Staging).
 
+## Implementierungsnotizen (Frontend)
+**Stand:** 2026-07-01 — Frontend-Registry-Naht + Branding + Musterantrag umgesetzt. **Backend offen** (registry-gesteuerte serverseitige Einreichung → `/backend`).
+
+**Neu (Portal-/Produkt-Schicht, isoliert):**
+- **Branding:** `src/lib/branding.ts` (Profile per `NEXT_PUBLIC_BRAND`, Default `flexcover`) → verdrahtet in `site-header.tsx` (Name + optional Logo), `layout.tsx` (Metadaten), `page.tsx` (Startseite). FX-Logo `public/portal/logo.svg` (SVG-Platzhalter, ersetzbar).
+- **Musterantrag-Modul:** `src/lib/forms/musterantrag/{definition,sample-data}.ts` (generischer Förderantrag: alle Feldtypen, Sichtbarkeitslogik, Wiederholgruppe, feste + dynamische Tabelle, berechnetes Feld) + `src/lib/pdf/musterantrag/{document.tsx,filename.ts}` (neutraler Kopf mit gezeichneter FX-Marke — keine Bilddatei nötig).
+- **Registry:** `src/lib/forms/registry.ts` (server-sicher, enthält bewusst **nur** generische Formulare — **nicht** FlexCover), `active.ts` (Aktive-Formulare per `NEXT_PUBLIC_ACTIVE_FORMS`, Default `flexcover`), `samples.ts` (Lazy-Loader), `src/lib/pdf/client.ts` (Browser-Client-PDF-Resolver, Font-Registrierung wie FlexCovers `index.ts`).
+- **Generischer Weg:** `src/components/form-runner/FormRunner.tsx` (parametrisierte Fassung des FlexCover-Orchestrators) + `GenericSubmissionActions`/`GenericSubmissionPdfButton`; Seiten `src/app/antrag/[formId]/(page|eingereicht|eingereicht/[id])`.
+- **Gating:** `src/proxy.ts` blockiert nicht-aktive `/antrag/<id>`-Pfade zentral (env-basiert, kein Registry-Import) → Rewrite auf `src/app/formular-nicht-verfuegbar/page.tsx` (404). So ist FlexCover auf dem Portal nicht erreichbar, **ohne FlexCover-Code zu ändern**.
+
+**FlexCover unangetastet:** keine Datei unter `src/app/antrag/flexcover/`, `src/components/flexcover/`, `src/lib/forms/flexcover/`, `src/lib/pdf/flexcover/` geändert. Statischer Routen-Vorrang: `/antrag/flexcover` nutzt weiter die dedizierte Seite, `/antrag/musterantrag` den generischen `[formId]`-Weg.
+
+**Zwei-Wege-Trennbarkeit gewahrt:** Registry/Portal-Schicht importiert nichts aus FlexCover; FlexCover importiert nichts aus Registry/Portal; Branding/Active sind env-basiert (Kern-nah, ohne Schicht-Kopplung).
+
+**Verifikation (lokal):**
+- `tsc --noEmit` sauber; ESLint sauber (nur vorbestehende Warnung).
+- **Default-Modus** (= Prod): Startseite/Branding = FlexCover unverändert; `/antrag/flexcover` 200; `/antrag/musterantrag` 404 (gated). **FlexCover-E2E-Regression: 57 passed / 1 skipped (grün)** → Status quo bestätigt.
+- **Portal-Modus** (`NEXT_PUBLIC_BRAND=eforms`, `NEXT_PUBLIC_ACTIVE_FORMS=musterantrag`): eforms-Marke + FX-Logo; `/antrag/musterantrag` 200; `/antrag/flexcover` 404. **`tests/PROJ-18-portal.spec.ts` (3 passed)** inkl. End-to-End Testdaten→Client-PDF-Download; Tests sind selbst-guardend (überspringen im Default-Modus).
+
+**Offen für `/backend`:** Die serverseitige Einreichung (`POST /api/submissions/[formId]` erzeugt Server-PDF + E-Mail) ist noch FlexCover-gekoppelt → registry-gesteuert generalisieren, damit Einreichung/Bestätigung/E-Mail für `musterantrag` funktionieren. Bis dahin funktionieren anonymes Ausfüllen, Client-PDF und Entwürfe/Auto-Save; die Einreichung selbst noch nicht.
+
 ## QA Test Results
 _To be added by /qa_
 

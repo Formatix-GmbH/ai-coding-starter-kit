@@ -3,13 +3,14 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { branding } from "@/lib/branding";
 
 export const metadata: Metadata = {
   title: {
-    default: "FlexCover Antragsportal",
-    template: "%s · FlexCover Antragsportal",
+    default: branding.appName,
+    template: `%s · ${branding.appName}`,
   },
-  description: "Förderanträge online ausfüllen, speichern und als PDF erhalten",
+  description: branding.description,
 };
 
 export default function RootLayout({

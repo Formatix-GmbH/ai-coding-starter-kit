@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="eforms Portal Logo">
+  <rect width="512" height="512" rx="24" fill="#d0021b"/>
+  <g fill="#ffffff">
+    <!-- F -->
+    <rect x="60" y="120" width="60" height="272"/>
+    <rect x="60" y="120" width="150" height="58"/>
+    <rect x="60" y="228" width="130" height="56"/>
+    <!-- X -->
+    <polygon points="300,120 372,120 452,392 380,392"/>
+    <polygon points="452,120 380,120 300,392 372,392"/>
+  </g>
+</svg>
