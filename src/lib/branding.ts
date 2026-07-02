@@ -68,7 +68,8 @@ const eforms: BrandProfile = {
     "Formulare online ausfüllen, speichern und als PDF erhalten — auf jedem Gerät, barrierefrei.",
   logoSrc: "/portal/Fav_FTX.png",
   home: {
-    title: "Formulare online ausfüllen — auf jedem Gerät",
+    title:
+      "Barrierefreie und DSGVO-konforme Formulare – intelligent, browserbasiert und auf allen Geräten nutzbar.",
     subtitle:
       "Füllen Sie das Formular bequem im Browser aus und laden Sie Ihr PDF herunter — ganz ohne Anmeldung. Ein Konto brauchen Sie nur, wenn Sie eine verbindliche Einreichung mit Eingangsbestätigung und PDF-Zusendung per E-Mail benötigen. Außerdem können Sie mit einem Konto den Antrag zwischenspeichern und zu einem späteren Zeitpunkt fortsetzen.",
     primaryHref: "/antrag/musterantrag",

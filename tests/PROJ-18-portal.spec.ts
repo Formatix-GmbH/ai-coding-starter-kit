@@ -14,7 +14,7 @@ async function portalActive(page: Page): Promise<boolean> {
 test("Portal: Startseite trägt die neutrale Marke (eforms)", async ({ page }) => {
   test.skip(!(await portalActive(page)), "Kein Portal-Deployment");
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(/jedem Gerät/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/Barrierefreie und DSGVO-konforme Formulare/);
 });
 
 test("Portal: FlexCover ist nicht erreichbar (404-gated)", async ({ page }) => {

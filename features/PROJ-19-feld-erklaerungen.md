@@ -160,7 +160,7 @@ Keine neuen Daten, keine Speicherung: Die Erklärung ist **statischer Text in de
 **Keine.** Collapsible-Baustein und Icon-Bibliothek sind vorhanden; Texte sind statischer Inhalt.
 
 ## Implementierungsnotizen (Frontend)
-**Stand:** 2026-07-02 — umgesetzt, **fachliches Text-Review durch Betreiber ausstehend** (vor Deploy).
+**Stand:** 2026-07-02 — umgesetzt; **alle 10 Texte am 2026-07-02 vom Betreiber fachlich freigegeben** (Abnahmekriterium „Qualität der Texte" erfüllt).
 
 - **Schema:** `explanation?` an `FieldNode` + `TableNode` (`src/lib/form-engine/types.ts`) — optional, ohne Text erscheint nichts.
 - **Komponente:** `src/components/form-engine/Explanation.tsx` — shadcn/Radix Collapsible; Auslöser „Was ist hier gemeint?" (Info-Symbol, dezent), zugänglicher Name inkl. Feldbezug als sr-only-Zusatz (WCAG 2.5.3 gewahrt); Panel mit Erklärtext + Fuß „Unverbindliche Ausfüllhilfe".
