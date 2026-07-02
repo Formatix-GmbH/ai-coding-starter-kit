@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getDraftRow } from "@/lib/drafts/store";
 import { isDraftExpired } from "@/lib/drafts/expiry";
-import { flexcoverDefinition } from "@/lib/forms/flexcover/definition";
+import { branding } from "@/lib/branding";
 import { DraftListItem } from "@/components/flexcover/DraftListItem";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,8 +33,9 @@ export default async function DashboardPage() {
   }
   const greeting = fullName ? `Willkommen zurück, ${fullName}` : "Willkommen zurück";
 
-  // Laufenden Entwurf laden (nicht abgelaufen).
-  const draftRow = await getDraftRow(supabase, flexcoverDefinition.id);
+  // Laufenden Entwurf des primären Formulars laden (nicht abgelaufen).
+  // Welches Formular das ist, bestimmt das Branding-Profil (PROJ-18).
+  const draftRow = await getDraftRow(supabase, branding.form.id);
   const activeDraft = draftRow && !isDraftExpired(draftRow.updated_at) ? draftRow : null;
 
   return (
@@ -47,17 +48,12 @@ export default async function DashboardPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Neuen Antrag starten</CardTitle>
-          <CardDescription>
-            Beginne einen neuen FlexCover-Förderantrag.
-          </CardDescription>
+          <CardDescription>{branding.form.startDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button asChild>
-            <Link href="/antrag/flexcover">Neuen Antrag starten</Link>
+            <Link href={branding.form.href}>Neuen Antrag starten</Link>
           </Button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Das Speichern von Entwürfen folgt mit PROJ-4.
-          </p>
         </CardContent>
       </Card>
 
@@ -71,9 +67,9 @@ export default async function DashboardPage() {
         <CardContent>
           {activeDraft ? (
             <DraftListItem
-              formId={flexcoverDefinition.id}
-              title={flexcoverDefinition.title}
-              href="/antrag/flexcover"
+              formId={branding.form.id}
+              title={branding.form.title}
+              href={branding.form.href}
               updatedAt={activeDraft.updated_at}
             />
           ) : (

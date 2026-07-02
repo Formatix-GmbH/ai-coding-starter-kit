@@ -18,6 +18,17 @@ export interface BrandHome {
   note?: string;
 }
 
+/** Primäres Formular des Deployments — fürs Dashboard (Start-Karte, Entwurfsliste).
+ *  Bewusst reine Strings (keine Definitions-Importe), damit die Branding-Konfiguration
+ *  von keiner Formular-Schicht abhängt (Zwei-Wege-Trennbarkeit). */
+export interface BrandPrimaryForm {
+  id: string;
+  title: string;
+  href: string;
+  /** Kartentext „Neuen Antrag starten" im Dashboard. */
+  startDescription: string;
+}
+
 export interface BrandProfile {
   /** Angezeigter Portal-Name (Kopfzeile, Titel, Metadaten). */
   appName: string;
@@ -26,6 +37,7 @@ export interface BrandProfile {
   /** Optionales Logo (Pfad unter /public). Ohne → nur Textmarke. */
   logoSrc?: string;
   home: BrandHome;
+  form: BrandPrimaryForm;
 }
 
 const flexcover: BrandProfile = {
@@ -41,6 +53,12 @@ const flexcover: BrandProfile = {
     secondaryHref: "/registrieren",
     secondaryLabel: "Konto erstellen",
     note: "Kostenlos und ohne Anmeldung — Ihre Eingaben bleiben im Browser.",
+  },
+  form: {
+    id: "flexcover",
+    title: "flex&cover – Förderantrag",
+    href: "/antrag/flexcover",
+    startDescription: "Beginne einen neuen FlexCover-Förderantrag.",
   },
 };
 
@@ -58,6 +76,12 @@ const eforms: BrandProfile = {
     secondaryHref: "/registrieren",
     secondaryLabel: "Konto erstellen",
     note: "Kostenlos und ohne Anmeldung — Ihre Eingaben bleiben im Browser.",
+  },
+  form: {
+    id: "musterantrag",
+    title: "Muster-Förderantrag",
+    href: "/antrag/musterantrag",
+    startDescription: "Beginnen Sie einen neuen Muster-Förderantrag.",
   },
 };
 
