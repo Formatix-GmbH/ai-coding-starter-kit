@@ -1,6 +1,6 @@
 # PROJ-19: Feld-Erklärungen (Stufe 1: Musterantrag, Abschnitt „Vorhaben")
 
-## Status: Planned
+## Status: Approved
 **Created:** 2026-07-02
 **Last Updated:** 2026-07-02
 
