@@ -14,7 +14,7 @@ import { deleteDraftRow } from "@/lib/drafts/store";
 import { MAX_SUBMISSION_BYTES } from "@/lib/submissions/constants";
 import { submissionPayloadSchema } from "@/lib/validation/submission";
 import { formIdSchema } from "@/lib/validation/draft";
-import { renderSubmissionPdf, submissionPdfFilename } from "@/lib/pdf/submission-pdf";
+import { renderSubmissionPdf, submissionPdfFilename, submissionEmailLabel } from "@/lib/pdf/submission-pdf";
 import { sendSubmissionEmail } from "@/lib/email/resend";
 import { verifyTurnstile, clientIpFromHeaders } from "@/lib/turnstile/verify";
 import type { FormValues } from "@/lib/form-engine/types";
@@ -89,6 +89,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         reference: submission.reference,
         pdf,
         filename: submissionPdfFilename(formId.data, submission.reference),
+        formLabel: submissionEmailLabel(formId.data),
       });
     }
   } catch (err) {

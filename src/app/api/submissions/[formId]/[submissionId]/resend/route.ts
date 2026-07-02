@@ -8,7 +8,7 @@ import { getSubmissionRow } from "@/lib/submissions/store";
 import { isSubmissionExpired } from "@/lib/submissions/expiry";
 import { submissionIdSchema } from "@/lib/validation/submission";
 import { formIdSchema } from "@/lib/validation/draft";
-import { renderSubmissionPdf, submissionPdfFilename } from "@/lib/pdf/submission-pdf";
+import { renderSubmissionPdf, submissionPdfFilename, submissionEmailLabel } from "@/lib/pdf/submission-pdf";
 import { sendSubmissionEmail } from "@/lib/email/resend";
 
 export const runtime = "nodejs";
@@ -59,6 +59,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
         reference: submission.reference,
         pdf,
         filename: submissionPdfFilename(formId.data, submission.reference),
+        formLabel: submissionEmailLabel(formId.data),
       });
     }
   } catch (err) {

@@ -40,3 +40,14 @@ export function submissionPdfFilename(formId: string, reference?: string): strin
   const fn = FILENAMES[formId];
   return fn ? fn(new Date(), reference) : `${formId}-${new Date().toISOString().slice(0, 10)}.pdf`;
 }
+
+// PROJ-20: Formularbezeichnung für die Bestätigungs-E-Mail (Betreff „Ihr <Label> – Referenz …").
+const EMAIL_LABELS: Record<string, string> = {
+  flexcover: "flex&cover-Antrag",
+  musterantrag: "Muster-Förderantrag",
+};
+
+/** Bezeichnung des Formulars in der Bestätigungs-E-Mail. */
+export function submissionEmailLabel(formId: string): string {
+  return EMAIL_LABELS[formId] ?? "Antrag";
+}

@@ -10,6 +10,8 @@ interface SubmissionEmailArgs {
   reference: string;
   pdf: Buffer;
   filename: string;
+  /** Formularbezeichnung für Betreff/Text (PROJ-20), z. B. „Muster-Förderantrag". */
+  formLabel?: string;
 }
 
 /** Versendet die Bestätigungs-E-Mail. Liefert true bei erfolgreichem Versand. */
@@ -18,6 +20,7 @@ export async function sendSubmissionEmail({
   reference,
   pdf,
   filename,
+  formLabel = "Antrag",
 }: SubmissionEmailArgs): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.SUBMISSION_EMAIL_FROM;
@@ -33,7 +36,7 @@ export async function sendSubmissionEmail({
     const { error } = await resend.emails.send({
       from,
       to,
-      subject: `Ihr flex&cover-Antrag – Referenz ${reference}`,
+      subject: `Ihr ${formLabel} – Referenz ${reference}`,
       text:
         `Vielen Dank für Ihre Einreichung.\n\n` +
         `Ihre Referenznummer: ${reference}\n\n` +
