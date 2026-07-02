@@ -170,7 +170,43 @@ Keine neuen Daten, keine Speicherung: Die Erklärung ist **statischer Text in de
 - **Verifikation:** tsc/Lint sauber; Portal-Modus 6/6 grün; Default-Modus volle Suite **58 passed / 12 skipped** (FlexCover-Status-quo bestätigt).
 
 ## QA Test Results
-_To be added by /qa_
+**Getestet:** 2026-07-02 · **Umgebung:** lokal (Dev-Server, Default- und Portal-Modus), Chromium + Mobile Safari (375 px).
+
+### Zusammenfassung
+- **Akzeptanzkriterien: alle bestanden.** **Bugs: 0** (kritisch/hoch/mittel/niedrig). **Empfehlung: produktionsreif.**
+- **Unit:** 125/125 grün (inkl. Umfangs-Pinning: genau die 10 bestätigten Knoten tragen Erklärungen, Mindestlänge geprüft).
+- **Portal-Modus:** PROJ-19 + PROJ-18-Suiten **21 passed** über beide Projekte (Chromium + Mobile Safari) — inkl. neuem Edge-Case-Test.
+- **Default-Modus (FlexCover-Status-quo):** volle Suite **58 passed / 13 skipped** — FlexCover zeigt **0 Erklärungs-Auslöser**, Verhalten unverändert.
+- Fehlversuche in Sammel-Läufen waren ausnahmslos der bekannte Dropbox-`.next`-Dev-Server-Flake (isoliert jeweils grün) — kein Produktbefund.
+
+### Akzeptanzkriterien (Nachweise)
+| Kriterium | Status | Nachweis |
+|---|---|---|
+| Auslöser sichtbar, eingeklappt als Standard | ✅ | E2E „Auslöser erscheinen … (eingeklappt)": 9 Trigger initial, kein Disclaimer sichtbar |
+| Aufklappen zeigt Text, Schließen möglich | ✅ | E2E „Aufklappen zeigt Text + Disclaimer … Schließen geht" |
+| Feld ohne Erklärung → kein Auslöser | ✅ | E2E „Titel des Vorhabens"-Test + Umfangs-Pinning (Unit) |
+| Eingaben/Validierung/Auto-Save unbeeinflusst | ✅ | E2E Tabellen-Test (Eingabe bei offenem Panel) + Edge-Case-Test |
+| Tastatur: öffnen/schließen, Zustand programmatisch | ✅ | `aria-expanded` false→true→false per E2E; Radix-Collapsible-Mechanik |
+| Screenreader-Name mit Feldbezug | ✅ | zugänglicher Name „Was ist hier gemeint? — Erklärung zu: <Feld>" (sichtbarer Text bleibt Teil des Namens, WCAG 2.5.3) |
+| axe 0 kritisch/schwer (auf- und zugeklappt) | ✅ | E2E-axe mit offenem Panel; zugeklappt durch PROJ-18-axe-Test abgedeckt |
+| Genau die bestätigten Felder im Umfang | ✅ | Unit-Test pinnt die 10 Pfade (schlägt bei Abweichung an) |
+| FlexCover ohne Auslöser, Status quo | ✅ | E2E-Regression (0 Trigger) + volle Default-Suite grün |
+| Disclaimer erkennbar | ✅ | „Unverbindliche Ausfüllhilfe" im Panel-Fuß (E2E-geprüft) |
+| Texte fachlich freigegeben | ✅ | Betreiber-Review 2026-07-02 (alle 10 Texte) |
+
+### Edge Cases
+- **Bedingtes Feld:** Erklärung erscheint/verschwindet mit dem Feld (E2E: 9→10 Trigger). ✅
+- **Erklärung + Fehlermeldung gleichzeitig:** neuer QA-Test — `aria-invalid` + Fehlerverknüpfung (PROJ-17) intakt, Erklärtext bleibt sichtbar, beides unterscheidbar. ✅
+- **Tabellen:** Auslöser genau einmal am Kopf (E2E `toHaveCount(1)`). ✅
+- **Mobil 375 px:** komplette PROJ-19-Suite auf Mobile Safari grün (Panel im Lesefluss, kein Overlay → kein 2D-Scroll-Risiko). ✅
+- **Mehrere Panels offen:** per Design erlaubt (unabhängige Collapsibles). ✅
+- **`help` + `explanation` koexistieren:** bei „Kurzbeschreibung" (hat beides) — getrennte Ebenen, keine Kollision. ✅
+
+### Sicherheits-Audit (Red Team)
+Statische Texte aus der (vertrauenswürdigen) Formulardefinition, von React escaped gerendert (kein `dangerouslySetInnerHTML`); keine Nutzereingaben im Erklärungspfad, keine neuen Endpunkte/Daten/Abhängigkeiten. Trigger ist `type="button"` (Radix) — löst kein Formular-Submit aus (empirisch durch E2E bestätigt: kein Validierungslauf beim Öffnen). **Kein Befund.**
+
+### Anmerkungen
+- Checkbox-Felder rendern derzeit keine Erklärung (eigener Render-Pfad ohne FieldShell) — kein Stufe-1-Feld betroffen; bei Bedarf in einer Folgestufe ergänzen (in Implementierungsnotizen dokumentiert).
 
 ## Deployment
 _To be added by /deploy_
