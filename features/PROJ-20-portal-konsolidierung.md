@@ -61,7 +61,7 @@ Euler Hermes hat abgesagt — der FlexCover-Prod-Betrieb ist obsolet. Das **Port
 
 ## Open Questions
 - [ ] **Zeitpunkt Phase 2 (Code-Rückbau + Test-Portierung auf Musterantrag)** — nach Bewährung des neuen Setups separat planen.
-- [ ] **portal-staging.eforms.de** — nachrüsten, sobald Portal-Änderungen vor Prod visuell geprüft werden sollen (aktuell bewusst verzichtet).
+- [x] **portal-staging.eforms.de** — nachgerüstet am 2026-07-02 (siehe Deployment-Nachtrag).
 - [ ] **Rechtstexte des Portals** (Datenschutz/Barrierefreiheit) — Platzhalter ersetzen, bevor echte Interessenten-Daten nennenswert anfallen.
 
 ## Decision Log
@@ -157,3 +157,6 @@ _To be added by /qa_
 - Server-Endzustand: `flexcover-portal-app-1` (Prod, main, portal-prod-DB) + `flexcover-staging-app-1` (develop, portal-dev-DB) + Traefik. Staging extern verifiziert unverändert (200, FlexCover-Branding).
 
 **Referenz-Nummern:** Präfix `FC-` bleibt vorerst (kosmetisch); neutrales Präfix als optionale Nacharbeit notiert.
+
+### Nachtrag: portal-staging.eforms.de (2026-07-02)
+Auf Betreiber-Wunsch direkt nachgerüstet (Open Question geschlossen): dritter Container `/opt/flexcover-portal-staging` (Branch `develop`, Supabase `portal-dev`, eforms-Branding, nur `musterantrag`, Testdaten-Button an, Absender `staging@eforms.de`), Traefik-Route mit **Basic-Auth `eforms`/`123xyz`** + noindex. `deploy-staging.yml` deployt jetzt **beide** Stagings bei Push auf `develop`. Serverseitig verifiziert (401→200, eforms-H1, noindex, musterantrag 200, flexcover 404). **Promotion-Modell:** `develop` → flexcover-staging + portal-staging · `main` → portal.eforms.de (Prod).

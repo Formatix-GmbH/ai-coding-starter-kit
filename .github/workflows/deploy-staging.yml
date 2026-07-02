@@ -1,7 +1,6 @@
-# PROJ-15: Deploy auf die Staging-Umgebung (develop → flexcover-staging.eforms.de).
-# Bei Push auf develop: auf dem Server `git pull` + Container neu bauen.
-# Nutzt dieselben Secrets wie der Prod-Workflow (DEPLOY_HOST/USER/SSH_KEY);
-# der Staging-Pfad ist fest /opt/flexcover-staging (kein Secret nötig).
+# PROJ-15/20: Deploy der Staging-Umgebungen (develop → flexcover-staging.eforms.de
+# UND portal-staging.eforms.de). Bei Push auf develop: auf dem Server `git pull` +
+# Container neu bauen. Nutzt die Secrets DEPLOY_HOST/USER/SSH_KEY; Pfade fest.
 
 name: Deploy Staging
 
@@ -27,6 +26,9 @@ jobs:
           script: |
             set -e
             cd /opt/flexcover-staging
+            git pull --ff-only
+            docker compose up -d --build
+            cd /opt/flexcover-portal-staging
             git pull --ff-only
             docker compose up -d --build
             docker image prune -f
