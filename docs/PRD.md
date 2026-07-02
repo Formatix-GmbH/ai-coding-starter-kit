@@ -1,7 +1,9 @@
 # Product Requirements Document
 
 ## Vision
-Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundgerüst (Form-Engine)**, mit dem sich dynamische, komplexe Web-Formulare aus einer Definition (JSON) erstellen lassen — ohne jedes Formular neu zu programmieren. Der bestehende **XFA-FlexCover-Förderantrag dient als erstes, anspruchsvolles Beispielformular** und Härtetest der Engine. Antragsteller füllen Formulare DSGVO-konform online aus, speichern Entwürfe (mit Konto) und erhalten am Ende ein PDF. Mittelfristig trägt die Engine mehrere Formulare und Mandanten.
+Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundgerüst (Form-Engine)**, mit dem sich dynamische, komplexe Web-Formulare aus einer Definition (JSON) erstellen lassen — ohne jedes Formular neu zu programmieren. **Produkt ist das eforms Portal (portal.eforms.de)** mit dem generischen **Muster-Förderantrag** als Referenzformular — barrierefrei, DSGVO-konform, browserbasiert auf allen Geräten. Antragsteller füllen Formulare online aus, speichern Entwürfe (mit Konto) und erhalten am Ende ein PDF. Mittelfristig trägt die Engine mehrere Formulare und Mandanten.
+
+> **Historie:** Der XFA-FlexCover-Förderantrag (Euler Hermes) war das erste, anspruchsvolle Beispielformular und der Härtetest der Engine. EH benötigt die Lösung nicht mehr (2026-07-02) — der FlexCover-Prod-Betrieb wurde eingestellt (PROJ-20); das Formular bleibt auf Staging vorführbar und ist über den Git-Tag `flexcover-baseline-2026-07-01` konserviert.
 
 ## Target Users
 **Ansprechpartner in antragstellenden Unternehmen** — Geschäftsführer, Finanzverantwortliche oder Assistenz, die im Auftrag ihres Unternehmens einen FlexCover-Förderantrag stellen. Sie kennen die Unternehmensdaten, sind aber keine Technikexperten. Sie erwarten ein klares, schrittweises Formular, das Fehler sofort signalisiert und ihre Eingaben sicher speichert.
@@ -26,7 +28,7 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger�
 | P1 | Datei-Upload & Unterschrift (Engine-Erweiterung) | Roadmap |
 | P1 | Externe Übermittlung / Webhook (Absende-Ziele) | Roadmap |
 | P1 | Neutrales Formular-Portal (portal.eforms.de) — herstellerneutrale Demo mit generischem Musterantrag; extraktions-freundlich für späteres Produkt-Repo | Deployed |
-| P0 | Portal-Konsolidierung: Portal wird Produkt-Prod (PROD-Supabase), FlexCover-Prod wird eingestellt (EH-Absage 2026-07-02); flexcover-staging bleibt | Planned |
+| P0 | Portal-Konsolidierung: Portal wird Produkt-Prod (PROD-Supabase), FlexCover-Prod wird eingestellt (EH-Absage 2026-07-02); flexcover-staging bleibt | Deployed |
 | P2 | Multi-Form / Multi-Mandanten-Verwaltung (mehrere Definitionen, Kundentrennung) | Roadmap |
 
 ## Success Metrics
@@ -36,7 +38,7 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger�
 - Keine personenbezogenen Daten landen in Logs, Fehlermeldungen oder Monitoring-Tools
 
 ## Constraints
-- **Deployment:** Hybrid (nicht Vercel). App läuft per **Docker Compose auf einem separaten Hetzner Cloud Server** (Ubuntu, Root) — der Hetzner **Managed Server (FreeBSD, kein Root/Docker)** kann Docker strukturell nicht betreiben und bleibt für Domain/DNS/Mail. DB/Auth = Supabase (extern). Public über `flexcover.eforms.de` hinter **Cloudflare** (Proxy, TLS Full strict + Origin-Cert). Siehe PROJ-14.
+- **Deployment:** Hybrid (nicht Vercel). App läuft per **Docker Compose auf einem separaten Hetzner Cloud Server** (Ubuntu, Root) — der Hetzner **Managed Server (FreeBSD, kein Root/Docker)** kann Docker strukturell nicht betreiben und bleibt für Domain/DNS/Mail. DB/Auth = Supabase (extern; `portal-prod` für Produktion, `portal-dev` für Staging). Public über **`portal.eforms.de`** (Prod, main) und `flexcover-staging.eforms.de` (Staging, develop, Basic-Auth) hinter **Cloudflare** (Proxy, TLS Full strict + Origin-Cert). Siehe PROJ-14/15/18/20.
 - **Team:** Solo-Entwickler mit KI-Unterstützung, kein festes Timeline-Commitment
 - **DSGVO:** Pflicht ab Tag 1 — Datenminimierung, kein PII in Logs, Trennung Dev/Test/Prod, DSGVO-Folgenabschätzung vor KI-Integration
 - **Design:** Tailwind CSS + shadcn/ui Defaults

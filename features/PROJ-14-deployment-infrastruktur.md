@@ -109,3 +109,6 @@ Die ursprüngliche PRD-Vorgabe „Hetzner Managed Server — Docker oder Node.js
 - ⚠️ **Traefik Docker-Provider** weiterhin via File-Provider umgangen (Docker 29 API-Inkompatibilität) — siehe oben.
 
 _Runbook in `docs/production/deployment-hetzner-cloudflare.md`._
+
+### Nachtrag (PROJ-20, 2026-07-02)
+FlexCover-Prod (`flexcover.eforms.de`) wurde stillgelegt (EH-Absage): Container/Route/DNS/Workflow entfernt. **Produkt-Prod ist jetzt das Portal** (`portal.eforms.de`, Branch `main`, Supabase `portal-prod`); Staging bleibt `flexcover-staging.eforms.de` (Branch `develop`, Supabase `portal-dev`). Details: PROJ-20.

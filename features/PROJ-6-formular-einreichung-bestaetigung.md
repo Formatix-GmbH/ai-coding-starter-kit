@@ -297,3 +297,6 @@ Keine kritischen/hohen Fehler. OBS-1..3 sind Low und können als Folge-Tickets a
 
 ## Deployment
 _To be added by /deploy_
+
+### Nachtrag (PROJ-20, 2026-07-02)
+Die Einreichung läuft produktiv jetzt auf dem Portal (`portal.eforms.de`, Musterantrag, Supabase `portal-prod`). Bestätigungs-E-Mail-Betreff ist formular-bewusst (`submissionEmailLabel`). FlexCover-Prod wurde stillgelegt; FlexCover bleibt auf Staging nutzbar.

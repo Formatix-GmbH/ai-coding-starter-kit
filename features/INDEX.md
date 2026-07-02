@@ -34,7 +34,7 @@
 | PROJ-17 | Barrierefreiheit (WCAG 2.1 AA) | Deployed | [PROJ-17](PROJ-17-barrierefreiheit-wcag.md) | 2026-06-29 |
 | PROJ-18 | Neutrales Formular-Portal (portal.eforms.de) | Deployed | [PROJ-18](PROJ-18-neutrales-formular-portal.md) | 2026-07-01 |
 | PROJ-19 | Feld-Erklärungen (Stufe 1: Musterantrag, Abschnitt „Vorhaben") | Deployed | [PROJ-19](PROJ-19-feld-erklaerungen.md) | 2026-07-02 |
-| PROJ-20 | Portal-Konsolidierung: Prod-Umzug + FlexCover-Prod-Stilllegung | Architected | [PROJ-20](PROJ-20-portal-konsolidierung.md) | 2026-07-02 |
+| PROJ-20 | Portal-Konsolidierung: Prod-Umzug + FlexCover-Prod-Stilllegung | Deployed | [PROJ-20](PROJ-20-portal-konsolidierung.md) | 2026-07-02 |
 
 <!-- Add features above this line -->
 

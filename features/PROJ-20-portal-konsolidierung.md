@@ -1,6 +1,6 @@
 # PROJ-20: Portal-Konsolidierung — Prod-Umzug + FlexCover-Prod-Stilllegung
 
-## Status: Planned
+## Status: Deployed
 **Created:** 2026-07-02
 **Last Updated:** 2026-07-02
 
@@ -140,4 +140,20 @@ Keine Schema-Änderung. Das PROD-Projekt hat dieselben Tabellen/Migrationen wie 
 _To be added by /qa_
 
 ## Deployment
-_To be added by /deploy_
+**Umgesetzt:** 2026-07-02 · **Tag:** `v1.4.0-PROJ-20`
+
+**Phase A — PROD-Supabase vorbereitet (Projekt umbenannt in `portal-prod`):**
+- EH-Testdaten vollständig gelöscht (3 Nutzer, 1 Entwurf, 1 Einreichung; Kaskade verifiziert 0/0/0/0). Migrationen paritätisch (alle 7).
+- Betreiber: Site-/Redirect-URLs → portal.eforms.de, SMTP-Absender „eforms Portal", deutsche Mail-Templates. DEV-Projekt umbenannt in `portal-dev`.
+- **Zwischenfall behoben:** Beim Bearbeiten der SMTP-Einstellungen war „Custom SMTP" deaktiviert worden → Mails gingen über Supabases eingebauten Mailer (`noreply@mail.app.supabase.io`, 2/h-Limit, Zustellprobleme). Diagnose über Auth-Logs (`mail_from`), Fix: Custom SMTP reaktiviert (Resend, `noreply@eforms.de`); danach Zustellung nachweislich ok. Folge-„Fehler" beim Passwort-Reset war nur `422 same_password` (neues = altes Passwort) — kein Systemfehler; sprechende Fehlermeldung als UX-Nacharbeit notiert.
+
+**Phase B — Portal umgeschaltet:**
+- `/opt/flexcover-portal/.env`: Supabase DEV→PROD (Rollback-Kopie `.env.bak-dev` liegt bereit), Rebuild. Supabase-Zugriff ist in dieser App komplett serverseitig → Laufzeit-Env maßgeblich (verifiziert im Container).
+- **End-to-End vom Betreiber bestätigt:** Registrieren → Bestätigungs-Mail → Login → Musterantrag einreichen → Bestätigungsseite + E-Mail mit PDF. Demo-Konto `demo@eforms.de` angelegt + bestätigt.
+- **Nachbesserung:** Bestätigungs-E-Mail-Betreff war noch „Ihr flex&cover-Antrag …" → `sendSubmissionEmail` um `formLabel` erweitert (Kompositions-Punkt `submissionEmailLabel`: flexcover → „flex&cover-Antrag", musterantrag → „Muster-Förderantrag").
+
+**Phase C — FlexCover-Prod stillgelegt:**
+- Container `flexcover-app-1` gestoppt/entfernt, `/opt/flexcover` gelöscht, Traefik-Route `flexcover.yml` ausgebaut → flexcover.eforms.de = 404. Workflow `deploy.yml` aus dem Repo entfernt. DNS-Eintrag `flexcover` durch Betreiber in Cloudflare gelöscht.
+- Server-Endzustand: `flexcover-portal-app-1` (Prod, main, portal-prod-DB) + `flexcover-staging-app-1` (develop, portal-dev-DB) + Traefik. Staging extern verifiziert unverändert (200, FlexCover-Branding).
+
+**Referenz-Nummern:** Präfix `FC-` bleibt vorerst (kosmetisch); neutrales Präfix als optionale Nacharbeit notiert.
