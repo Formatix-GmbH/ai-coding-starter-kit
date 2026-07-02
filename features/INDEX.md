@@ -33,7 +33,7 @@
 | PROJ-16 | Bot-Schutz mit Cloudflare Turnstile | Deployed | [PROJ-16](PROJ-16-turnstile-botschutz.md) | 2026-06-28 |
 | PROJ-17 | Barrierefreiheit (WCAG 2.1 AA) | Deployed | [PROJ-17](PROJ-17-barrierefreiheit-wcag.md) | 2026-06-29 |
 | PROJ-18 | Neutrales Formular-Portal (portal.eforms.de) | Deployed | [PROJ-18](PROJ-18-neutrales-formular-portal.md) | 2026-07-01 |
-| PROJ-19 | Feld-Erklärungen (Stufe 1: Musterantrag, Abschnitt „Vorhaben") | Approved | [PROJ-19](PROJ-19-feld-erklaerungen.md) | 2026-07-02 |
+| PROJ-19 | Feld-Erklärungen (Stufe 1: Musterantrag, Abschnitt „Vorhaben") | Deployed | [PROJ-19](PROJ-19-feld-erklaerungen.md) | 2026-07-02 |
 
 <!-- Add features above this line -->
 

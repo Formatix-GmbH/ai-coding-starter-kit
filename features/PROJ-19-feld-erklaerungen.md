@@ -209,4 +209,9 @@ Statische Texte aus der (vertrauenswürdigen) Formulardefinition, von React esca
 - Checkbox-Felder rendern derzeit keine Erklärung (eigener Render-Pfad ohne FieldShell) — kein Stufe-1-Feld betroffen; bei Bedarf in einer Folgestufe ergänzen (in Implementierungsnotizen dokumentiert).
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-07-02 · **Tag:** `v1.3.0-PROJ-19`
+
+- **Portal:** https://portal.eforms.de — live. Verifiziert: neue Startseiten-Überschrift („Barrierefreie und DSGVO-konforme Formulare …"), Musterantrag 200, Erklärtexte in der ausgelieferten Seite nachweisbar.
+- **Prod (Status quo):** https://flexcover.eforms.de nach Rebuild verifiziert unverändert — Antrag 200, **0 Erklärungs-Auslöser**, Startseite unverändert.
+- **Pipeline:** develop→Staging, main→Prod+Portal (Auto-Deploy). Keine Env-/DB-/Infra-Änderungen — reines Frontend, 0 € laufende Kosten.
+- **Nachzug FlexCover** (spätere Stufe): Texte in die FlexCover-Definition ergänzen + Review (idealerweise mit EH abgestimmt); Engine-Funktion liegt bereit.
