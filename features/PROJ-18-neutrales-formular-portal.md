@@ -246,4 +246,15 @@ Kein neues Datenmodell, aber **eine gezielte Backend-Anpassung**: die serverseit
 - **Manuelle Abnahme auf Staging/Portal:** Registrieren → Login → Einreichen → Bestätigungs-E-Mail mit Musterantrag-PDF (der einzige nicht headless-automatisierbare Teil, wegen Turnstile).
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-07-02 · **Tag:** `v1.2.0-PROJ-18`
+
+- **Portal:** https://portal.eforms.de — live (HTTP 200). Verifiziert: eforms-Marke + FX-Logo + Titel „eforms Portal", **`X-Robots-Tag: noindex, nofollow`**, `/antrag/flexcover` **404-gated**, `/antrag/musterantrag` 200, Login 200, Barrierefreiheit 200, Auth-Guard der Einreichungsliste 307.
+- **Prod unverändert (Status-quo-Nachweis):** https://flexcover.eforms.de nach Rebuild mit PROJ-18-Code — FlexCover-H1, kein FX-Logo, `/antrag/flexcover` 200, `/antrag/musterantrag` 404, kein noindex.
+- **Infrastruktur:** dritter Container `flexcover-portal-app-1` aus `/opt/flexcover-portal` (Branch `main`), gleiches Image-Rezept, eigene `.env` (`NEXT_PUBLIC_BRAND=eforms`, `NEXT_PUBLIC_ACTIVE_FORMS=musterantrag`, DEV-Supabase, `SUBMISSION_EMAIL_FROM="eforms Portal <portal@eforms.de>"`, `NEXT_PUBLIC_ENABLE_TESTDATA=1` für Demos). Traefik-Route `/opt/apps/traefik/dynamic/flexcover-portal.yml` (noindex, ohne Basic-Auth); Cloudflare-DNS `portal` → Server (Proxy an, Origin-Cert `*.eforms.de`). **Auto-Deploy:** `.github/workflows/deploy-portal.yml` (Push auf `main`).
+- **Supabase DEV:** Redirect URLs um `https://portal.eforms.de/**` ergänzt (User).
+- **Deploy-Härtung:** Dockerfile/Compose reichen `NEXT_PUBLIC_BRAND`/`NEXT_PUBLIC_ACTIVE_FORMS` als Build-Args durch; `active.ts`/`branding.ts` behandeln **Leerstring wie nicht gesetzt** (Docker-Build-Args!) — ohne diesen Fix wäre Prod nach dem Rebuild komplett 404 gewesen (per Unit-Test abgesichert).
+
+### Nach Deploy offen
+- [ ] **Manuelle Abnahme** (User, wegen Turnstile nicht automatisierbar): auf portal.eforms.de Registrieren → Login → Musterantrag einreichen → Bestätigungs-E-Mail mit PDF prüfen.
+- [ ] `.env.local.example` um `NEXT_PUBLIC_BRAND` + `NEXT_PUBLIC_ACTIVE_FORMS` ergänzen (User — Datei ist für den Agenten gesperrt).
+- [ ] Optional (Low-Befund aus QA): API-seitiges Formular-Gating.
