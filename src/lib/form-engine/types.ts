@@ -58,6 +58,10 @@ export interface FieldNode {
   required?: boolean;
   placeholder?: string;
   help?: string;
+  /** PROJ-19: Aufklappbare Erklärung in einfacher Sprache („Was ist hier
+   *  gemeint?"). Optional — ohne Text erscheint kein Auslöser. Anders als
+   *  `help` (einzeiliger Kurzhinweis) ein Langtext mit Beispiel. */
+  explanation?: string;
   options?: SelectOption[]; // für select
   pattern?: string; // Regex als String (z.B. PLZ)
   patternMessage?: string;
@@ -109,6 +113,8 @@ export interface TableNode {
   kind: "table";
   key: string;
   label: string;
+  /** PROJ-19: Aufklappbare Erklärung am Tabellen-Kopf (einmal je Tabelle). */
+  explanation?: string;
   columns: TableColumn[];
   /** "fixed" → vordefinierte beschriftete Zeilen; "dynamic" → Nutzer fügt Zeilen hinzu. */
   mode: "fixed" | "dynamic";

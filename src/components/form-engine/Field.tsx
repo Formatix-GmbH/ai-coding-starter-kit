@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Explanation } from "./Explanation";
 
 /** Stabile, ableitbare IDs für Hilfetext/Fehlertext/Beschriftung eines Feldes. */
 function fieldIds(id: string) {
@@ -61,6 +62,7 @@ function FieldShell({
   label,
   required,
   help,
+  explanation,
   error,
   children,
 }: {
@@ -68,6 +70,7 @@ function FieldShell({
   label: string;
   required?: boolean;
   help?: string;
+  explanation?: string;
   error?: string;
   children: React.ReactNode;
 }) {
@@ -82,6 +85,7 @@ function FieldShell({
           </span>
         )}
       </Label>
+      {explanation && <Explanation label={label} text={explanation} />}
       {children}
       {help && !error && (
         <p id={helpId} className="text-sm text-muted-foreground">
@@ -125,7 +129,7 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
     // Schreibgeschützt statt deaktiviert: der Wert bleibt für Tastatur und
     // Screenreader wahrnehmbar und wird als „nur lesbar" angekündigt.
     return (
-      <FieldShell id={id} label={node.label} help={node.help}>
+      <FieldShell id={id} label={node.label} help={node.help} explanation={node.explanation}>
         <Input
           id={id}
           value={result ?? ""}
@@ -143,7 +147,7 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
   // Auswahl (Dropdown)
   if (node.type === "select") {
     return (
-      <FieldShell id={id} label={node.label} required={node.required} help={node.help} error={error}>
+      <FieldShell id={id} label={node.label} required={node.required} help={node.help} explanation={node.explanation} error={error}>
         <Controller
           control={control}
           name={path}
@@ -175,7 +179,7 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
   // Ja/Nein (Radio), optional mit leerer Möglichkeit über das Nicht-Auswählen
   if (node.type === "yesno" || node.type === "yesno_optional") {
     return (
-      <FieldShell id={id} label={node.label} required={node.required} help={node.help} error={error}>
+      <FieldShell id={id} label={node.label} required={node.required} help={node.help} explanation={node.explanation} error={error}>
         <Controller
           control={control}
           name={path}
@@ -251,7 +255,7 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
   // Mehrzeiliger Text
   if (node.type === "textarea") {
     return (
-      <FieldShell id={id} label={node.label} required={node.required} help={node.help} error={error}>
+      <FieldShell id={id} label={node.label} required={node.required} help={node.help} explanation={node.explanation} error={error}>
         <Textarea id={id} placeholder={node.placeholder} {...a11y} {...register(path)} onBlur={onBlur} />
       </FieldShell>
     );
@@ -263,7 +267,7 @@ export function Field({ node, path }: { node: FieldNode; path: string }) {
     node.type === "email" ? "email" : node.type === "date" ? "date" : "text";
 
   return (
-    <FieldShell id={id} label={node.label} required={node.required} help={node.help} error={error}>
+    <FieldShell id={id} label={node.label} required={node.required} help={node.help} explanation={node.explanation} error={error}>
       <div className="relative">
         <Input
           id={id}

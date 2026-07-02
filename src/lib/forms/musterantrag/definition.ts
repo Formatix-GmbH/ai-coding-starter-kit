@@ -105,12 +105,16 @@ export const musterantragDefinition: FormDefinition = {
           type: "textarea",
           required: true,
           help: "Worum geht es, welches Ziel wird verfolgt?",
+          explanation:
+            "Beschreiben Sie in wenigen Sätzen, worum es in Ihrem Vorhaben geht: Was ist das Ziel? Wie wollen Sie es erreichen? Welches Ergebnis erwarten Sie am Ende? Beispiel: „Wir entwickeln eine Software, mit der kleine Betriebe ihre Förderanträge digital stellen können. Ziel ist, den Papieraufwand um die Hälfte zu senken.“",
         },
         {
           kind: "field",
           key: "foerderbereich",
           label: "Förderbereich",
           type: "select",
+          explanation:
+            "Wählen Sie den Bereich, zu dem Ihr Vorhaben am besten passt: „Forschung & Entwicklung“ = etwas Neues erforschen oder entwickeln; „Digitalisierung“ = Abläufe oder Produkte digital machen; „Nachhaltigkeit“ = Umwelt- oder Klimaverbesserungen; „Qualifizierung“ = Aus- und Weiterbildung von Beschäftigten. Passt mehreres, wählen Sie den Schwerpunkt — den Bereich, in dem der größte Teil Ihres Vorhabens liegt.",
           options: [
             { value: "Forschung & Entwicklung", label: "Forschung & Entwicklung" },
             { value: "Digitalisierung", label: "Digitalisierung" },
@@ -126,22 +130,47 @@ export const musterantragDefinition: FormDefinition = {
           label: "Kostenplan (berechnete Gesamtsumme)",
           inline: true,
           children: [
-            { kind: "field", key: "personal", label: "Personalkosten", type: "currency" },
-            { kind: "field", key: "sachmittel", label: "Sachmittel", type: "currency" },
+            {
+              kind: "field",
+              key: "personal",
+              label: "Personalkosten",
+              type: "currency",
+              explanation:
+                "Alle Kosten für die Mitarbeitenden, die am Vorhaben arbeiten: Bruttogehälter einschließlich der Arbeitgeberanteile zur Sozialversicherung. Arbeitet jemand nur teilweise am Vorhaben, zählt nur dieser Anteil. Beispiel: Eine Entwicklerin arbeitet zur Hälfte am Projekt — angesetzt wird die Hälfte ihrer Gehaltskosten.",
+            },
+            {
+              kind: "field",
+              key: "sachmittel",
+              label: "Sachmittel",
+              type: "currency",
+              explanation:
+                "Kosten für Dinge und Leistungen, die Sie für das Vorhaben einkaufen: Geräte, Material, Software-Lizenzen oder Leistungen externer Dienstleister. Nicht dazu zählen die Gehälter Ihrer eigenen Mitarbeitenden — die gehören in die Personalkosten.",
+            },
             {
               kind: "field",
               key: "gesamt",
               label: "Gesamtkosten",
               type: "currency",
+              explanation:
+                "Dieses Feld wird automatisch berechnet: Personalkosten plus Sachmittel. Sie können hier nichts eintragen — korrigieren Sie bei Bedarf die beiden Felder davor.",
               computed: { op: "sum", fields: ["vorhaben.kosten.personal", "vorhaben.kosten.sachmittel"] },
             },
           ],
         },
-        { kind: "field", key: "eigenmittel", label: "Eingesetzte Eigenmittel", type: "currency" },
+        {
+          kind: "field",
+          key: "eigenmittel",
+          label: "Eingesetzte Eigenmittel",
+          type: "currency",
+          explanation:
+            "Der Betrag, den Ihre Organisation selbst zum Vorhaben beisteuert — eigenes Geld, keine Fördermittel. Eigenmittel zeigen, dass Sie hinter dem Vorhaben stehen; viele Förderprogramme erwarten eine Eigenbeteiligung. Beispiel: Bei Gesamtkosten von 100.000 € übernehmen Sie 30.000 € selbst.",
+        },
         {
           kind: "table",
           key: "meilensteine",
           label: "Meilensteine",
+          explanation:
+            "Ein Meilenstein ist ein überprüfbares Zwischenergebnis mit Termin — z. B. „Konzept fertig“, „Prototyp einsatzbereit“ oder „Pilotbetrieb abgeschlossen“. Planen Sie so, dass sich der Fortschritt daran ablesen lässt: 3 bis 6 Meilensteine sind meist sinnvoll — nicht jede Kleinigkeit, aber auch nicht nur „Projektende“.",
           mode: "dynamic",
           addLabel: "Meilenstein hinzufügen",
           columns: [
@@ -154,6 +183,8 @@ export const musterantragDefinition: FormDefinition = {
           kind: "table",
           key: "mittelverwendung",
           label: "Mittelverwendung nach Jahr (in EUR)",
+          explanation:
+            "Verteilen Sie die geplanten Kosten auf die Jahre, in denen sie voraussichtlich anfallen. Jahr 1 ist das erste Jahr des Vorhabens (ab dem geplanten Beginn). Die Summe über alle Jahre sollte zu Ihrem Kostenplan weiter oben passen.",
           mode: "fixed",
           columns: [
             { key: "jahr1", label: "Jahr 1", type: "currency" },
@@ -173,6 +204,8 @@ export const musterantragDefinition: FormDefinition = {
           key: "international",
           label: "Gibt es internationale Projektpartner?",
           type: "yesno",
+          explanation:
+            "Gemeint sind Organisationen mit Sitz außerhalb Deutschlands, die aktiv am Vorhaben mitarbeiten — z. B. eine Partnerfirma in Österreich, die einen Teil der Entwicklung übernimmt. Reine Lieferanten oder Kunden im Ausland zählen nicht als Projektpartner.",
         },
         {
           kind: "field",
@@ -180,6 +213,8 @@ export const musterantragDefinition: FormDefinition = {
           label: "Beschreibung der internationalen Zusammenarbeit",
           type: "textarea",
           required: true,
+          explanation:
+            "Beschreiben Sie je Partner kurz: Wer ist es (Name, Land)? Welche Rolle hat er im Vorhaben? Was trägt er konkret bei? Beispiel: „Die Voorbeeld B.V. (Niederlande) testet unsere Software mit 20 Pilotkunden und liefert die Auswertung.“",
           visibleWhen: { field: "vorhaben.international", op: "eq", value: "Ja" },
         },
         {

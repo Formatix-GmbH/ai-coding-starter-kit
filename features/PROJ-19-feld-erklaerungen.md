@@ -159,6 +159,16 @@ Keine neuen Daten, keine Speicherung: Die Erklärung ist **statischer Text in de
 ### D) Abhängigkeiten (zu installieren)
 **Keine.** Collapsible-Baustein und Icon-Bibliothek sind vorhanden; Texte sind statischer Inhalt.
 
+## Implementierungsnotizen (Frontend)
+**Stand:** 2026-07-02 — umgesetzt, **fachliches Text-Review durch Betreiber ausstehend** (vor Deploy).
+
+- **Schema:** `explanation?` an `FieldNode` + `TableNode` (`src/lib/form-engine/types.ts`) — optional, ohne Text erscheint nichts.
+- **Komponente:** `src/components/form-engine/Explanation.tsx` — shadcn/Radix Collapsible; Auslöser „Was ist hier gemeint?" (Info-Symbol, dezent), zugänglicher Name inkl. Feldbezug als sr-only-Zusatz (WCAG 2.5.3 gewahrt); Panel mit Erklärtext + Fuß „Unverbindliche Ausfüllhilfe".
+- **Einbau:** `FieldShell` (alle Feldtypen inkl. berechneter; Checkbox-Sonderpfad bewusst ohne — kein Stufe-1-Feld betroffen) + Tabellen-Kopf in `nodes.tsx` (einmal je Tabelle).
+- **Inhalte:** 10 Erklärtexte in der Musterantrag-Definition (Abschnitt „Vorhaben"), einfache Sprache mit Beispielen, herstellerneutral.
+- **Tests:** Unit `definition.test.ts` schreibt den 10er-Umfang fest (schlägt bei unabgestimmten Änderungen an). E2E `tests/PROJ-19-erklaerungen.spec.ts` (selbst-guardend): Auslöser-Anzahl 9→10 (bedingtes Feld), Auf-/Zuklappen + `aria-expanded`, Feld ohne Erklärung ohne Auslöser, Tabellen-Kopf einmalig, Eingaben unbeeinflusst, axe (aufgeklappt) 0 krit./schwere, FlexCover-Regression 0 Auslöser.
+- **Verifikation:** tsc/Lint sauber; Portal-Modus 6/6 grün; Default-Modus volle Suite **58 passed / 12 skipped** (FlexCover-Status-quo bestätigt).
+
 ## QA Test Results
 _To be added by /qa_
 

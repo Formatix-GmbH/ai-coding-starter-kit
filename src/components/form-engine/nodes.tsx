@@ -12,6 +12,7 @@ import type { FormNode, TableColumn } from "@/lib/form-engine/types";
 import { evaluateCondition } from "@/lib/form-engine/conditions";
 import { joinPath } from "@/lib/form-engine/paths";
 import { Field } from "./Field";
+import { Explanation } from "./Explanation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -220,6 +221,8 @@ function TableView({
   return (
     <div className="space-y-2">
       {node.label && <h3 className="text-sm font-medium">{node.label}</h3>}
+      {/* Erklärung einmal am Tabellen-Kopf (nicht je Zelle). PROJ-19. */}
+      {node.explanation && <Explanation label={node.label} text={node.explanation} />}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           {/* Caption verankert den Tabellennamen für Screenreader auch dann,
