@@ -265,8 +265,11 @@ function TabsLayout({
 
       <div className="flex flex-col gap-4 md:flex-row md:gap-6">
         {/* Abschnitts-Navigation: links (Desktop) bzw. oben scrollbar (Mobil).
-            md:self-start + md:sticky → bleibt beim Scrollen/Wechseln fest an Ort. */}
-        <TabsList className="h-auto w-full shrink-0 flex-row gap-1 overflow-x-auto bg-transparent p-0 md:sticky md:top-6 md:w-60 md:flex-col md:self-start">
+            md:self-start + md:sticky → bleibt beim Scrollen/Wechseln fest an Ort.
+            justify-start überschreibt das justify-center der TabsList-Basis:
+            Bei zentriertem Inhalt ragen überlaufende Tabs links über den
+            Scroll-Ursprung hinaus und sind auf Mobil unerreichbar (Tab 1+2 fehlten). */}
+        <TabsList className="h-auto w-full shrink-0 flex-row justify-start gap-1 overflow-x-auto bg-transparent p-0 md:sticky md:top-6 md:w-60 md:flex-col md:self-start">
           {sections.map((s, i) => (
             <TabsTrigger
               key={s.key}

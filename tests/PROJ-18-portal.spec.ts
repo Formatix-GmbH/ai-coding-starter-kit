@@ -23,6 +23,19 @@ test("Portal: FlexCover ist nicht erreichbar (404-gated)", async ({ page }) => {
   expect(resp?.status()).toBe(404);
 });
 
+test("Portal: alle Tabs sind auf Mobil erreichbar (Tab 1 anklickbar, kein Abschneiden links)", async ({ page }) => {
+  test.skip(!(await portalActive(page)), "Kein Portal-Deployment");
+  await page.goto("/antrag/musterantrag");
+  await expect(page.getByRole("button", { name: "Testdaten laden" })).toBeVisible();
+  // Regression: justify-center der TabsList-Basis machte auf Mobil die ersten
+  // Tabs unerreichbar (überliefen links den Scroll-Ursprung). Tab 1 muss
+  // anklickbar sein und seinen Inhalt zeigen.
+  const tab1 = page.getByRole("tab", { name: /Ansprechpartner/ });
+  await tab1.click();
+  await expect(tab1).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[id="kontakt.email"]')).toBeVisible();
+});
+
 test("Portal: Einreichungsliste erfordert Anmeldung (Auth-Guard)", async ({ page }) => {
   test.skip(!(await portalActive(page)), "Kein Portal-Deployment");
   await page.goto("/antrag/musterantrag/eingereicht");
