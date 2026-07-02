@@ -81,12 +81,60 @@ Euler Hermes hat abgesagt — der FlexCover-Prod-Betrieb ist obsolet. Das **Port
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| „Erst vorbereiten, dann umschalten" (PROD komplett fertig, dann Env-Wechsel) | Umschaltung dauert Minuten statt riskanter Live-Operation; kein Ausfall während der Vorbereitung | 2026-07-02 |
+| Rollback = Portal-`.env` zurück auf DEV + Rebuild | DEV bleibt unangetastet → Rückweg jederzeit in Minuten | 2026-07-02 |
+| FlexCover-Prod-Abbau erst NACH verifizierter Portal-Umschaltung | zu keinem Zeitpunkt ohne funktionierendes Prod-System | 2026-07-02 |
+| Stilllegung = Container/Route/DNS/Workflow entfernen, Code/Historie bleiben | Baseline-Tag + Git konservieren alles; Betrieb beenden ≠ löschen | 2026-07-02 |
+| DNS entfernen UND Route/Container stoppen | DNS-Cache-Fenster überbrücken — sofort wirksam | 2026-07-02 |
+| Einzige Repo-Änderung: `deploy.yml` (FlexCover-Prod-Workflow) entfernen | Pipeline aufgeräumt; Portal-/Staging-Workflows unangetastet | 2026-07-02 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Grundsatz
+**Kein Code-Umbau** — die App bleibt unverändert; es ändern sich Konfiguration (Portal-`.env`), Supabase-Projekt-Einstellungen, Server/DNS und ein Pipeline-Workflow. Leitprinzip: **„Erst vorbereiten, dann umschalten"** — das PROD-Projekt wird vollständig fertig gemacht, *während* das Portal noch auf DEV läuft. Die eigentliche Umschaltung ist dann ein Env-Wechsel + Rebuild (Minuten), mit trivialem Rollback (Env zurück).
+
+### A) Umzugsplan (Phasen & Reihenfolge)
+```
+Phase A — PROD-Supabase vorbereiten (Portal läuft weiter auf DEV, kein Ausfall)
+├── EH-Testdaten bereinigen: Alt-Nutzer, Einreichungen, Entwürfe löschen (DSGVO)
+├── Migrationen prüfen (form_drafts/submissions inkl. Aufräum-Jobs sind bereits drauf)
+└── Auth-Konfiguration im Dashboard (Betreiber):
+    ├── Site URL + Redirect URLs → portal.eforms.de
+    ├── SMTP-Absendername „eforms Portal" + deutsche Mail-Templates
+    └── Turnstile-Secret prüfen (war für FlexCover-Prod schon korrekt gesetzt)
+
+Phase B — Portal umschalten (kurzes Wartungsfenster, Minuten)
+├── Portal-.env: Supabase-URL/Key von DEV → PROD; Container neu bauen
+├── Smoke-Test: Registrieren → Bestätigen → Anmelden → Entwurf → Einreichen → E-Mail
+└── Demo-Konto im PROD-Projekt anlegen + manuell bestätigen (Betreiber)
+
+Phase C — FlexCover-Prod stilllegen
+├── Container stoppen + Verzeichnis /opt/flexcover entfernen (Git/Baseline konserviert alles)
+├── Traefik-Route flexcover.yml ausbauen
+├── DNS-Eintrag flexcover.eforms.de entfernen (Betreiber, Cloudflare)
+└── Workflow deploy.yml (main→FlexCover-Prod) aus dem Repo entfernen
+    → einzige Repo-Änderung; Portal-/Staging-Workflows bleiben unangetastet
+
+Phase D — Dokumentation
+└── PRD-Vision (Portal = Produkt, FlexCover = eingestelltes Referenzprojekt),
+    INDEX, Deployment-Notizen in PROJ-6/14, Projekt-Merker
+```
+
+### B) Datenmodell (unverändert — nur Daten-Hygiene)
+Keine Schema-Änderung. Das PROD-Projekt hat dieselben Tabellen/Migrationen wie DEV bereits installiert. Es werden ausschließlich **EH-Testdaten gelöscht** (Datenminimierung) — danach ist das Projekt der saubere Prod-Speicher des Portals. DEV bleibt unverändert der Speicher für Staging (inkl. bestehender Demo-Konten dort).
+
+### C) Tech-Entscheidungen (für PM begründet)
+- **„Erst vorbereiten, dann umschalten":** Alle PROD-Einstellungen entstehen, während das Portal ungestört auf DEV läuft — die Umschaltung selbst ist ein minutenkurzer Env-Wechsel statt einer riskanten Live-Operation.
+- **Rollback trivial by design:** Solange DEV unangetastet bleibt (bleibt es), ist der Rückweg jederzeit „Env zurück auf DEV + Rebuild". FlexCover-Prod wäre über Git + Baseline-Tag reaktivierbar.
+- **Stilllegen = Betrieb beenden, nicht löschen:** Code, Historie und Baseline-Tag bleiben; nur Container/Route/DNS/Workflow verschwinden. Kein Datenverlust-Risiko.
+- **Reihenfolge C nach B:** FlexCover-Prod wird erst abgebaut, wenn das Portal nachweislich auf PROD läuft — kein Zeitpunkt ohne funktionierendes Prod-System.
+- **DNS entfernen UND Route/Container stoppen:** wegen DNS-Cache reicht DNS allein nicht — doppelt abgesichert ist sofort wirksam.
+
+### D) Abhängigkeiten
+**Keine neuen Pakete/Dienste.** Benötigt werden nur Betreiber-Handgriffe in zwei Dashboards (Supabase PROD: Auth-Konfiguration; Cloudflare: DNS-Eintrag entfernen) — der Rest läuft über SSH/MCP wie gewohnt.
 
 ## QA Test Results
 _To be added by /qa_
