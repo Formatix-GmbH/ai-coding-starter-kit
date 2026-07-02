@@ -20,7 +20,8 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger�
 | P0 (MVP) | PDF-Generierung & Download | Planned |
 | P0 (MVP) | Formular-Einreichung & Bestätigung (inkl. Bestätigungs-E-Mail mit PDF) | Planned |
 | P1 | PDF-Versand per E-Mail | Obsolet — in PROJ-6 zusammengeführt |
-| P1 | KI-gestützte Formularausfüllung | Roadmap |
+| P1 | Feld-Erklärungen (Stufe 1: Musterantrag „Vorhaben") — KI-generiert zur Entwurfszeit, keine Laufzeit-KI | Planned |
+| P1 | KI-gestützte Formularausfüllung (Laufzeit-KI: Vorbefüllung, Einreichungs-Check) | Roadmap |
 | P1 | Admin Dashboard (Antragsübersicht) | Roadmap |
 | P1 | Datei-Upload & Unterschrift (Engine-Erweiterung) | Roadmap |
 | P1 | Externe Übermittlung / Webhook (Absende-Ziele) | Roadmap |
