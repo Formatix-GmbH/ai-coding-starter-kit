@@ -25,7 +25,8 @@ Kern des Projekts ist ein **wiederverwendbares, definitionsgesteuertes Grundger�
 | P1 | Admin Dashboard (Antragsübersicht) | Roadmap |
 | P1 | Datei-Upload & Unterschrift (Engine-Erweiterung) | Roadmap |
 | P1 | Externe Übermittlung / Webhook (Absende-Ziele) | Roadmap |
-| P1 | Neutrales Formular-Portal (portal.eforms.de) — herstellerneutrale Demo mit generischem Musterantrag; extraktions-freundlich für späteres Produkt-Repo | Planned |
+| P1 | Neutrales Formular-Portal (portal.eforms.de) — herstellerneutrale Demo mit generischem Musterantrag; extraktions-freundlich für späteres Produkt-Repo | Deployed |
+| P0 | Portal-Konsolidierung: Portal wird Produkt-Prod (PROD-Supabase), FlexCover-Prod wird eingestellt (EH-Absage 2026-07-02); flexcover-staging bleibt | Planned |
 | P2 | Multi-Form / Multi-Mandanten-Verwaltung (mehrere Definitionen, Kundentrennung) | Roadmap |
 
 ## Success Metrics
