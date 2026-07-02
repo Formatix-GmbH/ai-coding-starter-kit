@@ -48,7 +48,7 @@ const eforms: BrandProfile = {
   appName: "eforms Portal",
   description:
     "Formulare online ausfüllen, speichern und als PDF erhalten — auf jedem Gerät, barrierefrei.",
-  logoSrc: "/portal/logo.svg",
+  logoSrc: "/portal/Fav_FTX.png",
   home: {
     title: "Formulare online ausfüllen — auf jedem Gerät",
     subtitle:

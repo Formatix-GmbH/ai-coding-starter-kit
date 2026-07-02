@@ -25,7 +25,12 @@ export async function SiteHeader() {
       >
         {branding.logoSrc && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={branding.logoSrc} alt="" aria-hidden className="h-7 w-7 rounded" />
+          <img
+            src={branding.logoSrc}
+            alt=""
+            aria-hidden
+            className="h-7 w-7 rounded object-contain"
+          />
         )}
         {branding.appName}
       </Link>
