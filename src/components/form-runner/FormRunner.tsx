@@ -334,15 +334,6 @@ function RunnerForm({
         </div>
       </div>
 
-      {resolved.loadedAt && !noticeDismissed && (
-        <Alert>
-          <AlertTitle>Entwurf wiederhergestellt</AlertTitle>
-          <AlertDescription>
-            Wir haben Ihren Entwurf vom {formatDate(resolved.loadedAt)} geladen. Sie können dort weitermachen oder über „Verwerfen“ neu beginnen.
-          </AlertDescription>
-        </Alert>
-      )}
-
       {localUnavailable && (
         <Alert variant="destructive">
           <AlertTitle>Automatisches Sichern nicht möglich</AlertTitle>
@@ -378,27 +369,34 @@ function RunnerForm({
     </div>
   );
 
-  const anonHint = (
-    <Alert>
-      <AlertTitle>Zum Einreichen bitte anmelden</AlertTitle>
-      <AlertDescription>
-        Eine verbindliche Einreichung mit Eingangsbestätigung und PDF-Zusendung per E-Mail ist nur mit Konto möglich.{" "}
-        <Link href={`/login?returnTo=${basePath}`} className="font-medium underline">Anmelden</Link>{" "}
-        oder{" "}
-        <Link href={`/registrieren?returnTo=${basePath}`} className="font-medium underline">registrieren</Link>
-        . Ihren vollständig ausgefüllten Antrag können Sie unten jederzeit als PDF herunterladen.
-      </AlertDescription>
-    </Alert>
-  );
-
   const isAuthed = mode === "server";
 
-  const einreichCaptcha = turnstileEnabled ? (
+  // Hinweis auf einen wiederhergestellten Entwurf — bewusst unten bei den
+  // Aktionen platziert (statt im Kopf); die Konto-Vorteile erklärt die Startseite.
+  const draftNotice =
+    resolved.loadedAt && !noticeDismissed ? (
+      <Alert>
+        <AlertTitle>Entwurf wiederhergestellt</AlertTitle>
+        <AlertDescription>
+          Wir haben Ihren Entwurf vom {formatDate(resolved.loadedAt)} geladen. Sie können dort weitermachen oder über „Verwerfen“ neu beginnen.
+        </AlertDescription>
+      </Alert>
+    ) : null;
+
+  const einreichCaptcha = isAuthed && turnstileEnabled ? (
     <div className="space-y-1.5">
       <p className="text-xs text-muted-foreground">Bitte bestätigen Sie kurz, dass Sie kein Roboter sind, um den Antrag einzureichen.</p>
       <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
     </div>
-  ) : undefined;
+  ) : null;
+
+  const actionsNote =
+    draftNotice || einreichCaptcha ? (
+      <div className="space-y-3">
+        {draftNotice}
+        {einreichCaptcha}
+      </div>
+    ) : undefined;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -416,7 +414,7 @@ function RunnerForm({
             ? [{ key: "download", label: "PDF herunterladen", variant: "outline", disabled: submitting, onAction: handleDownloadPdf }]
             : undefined
         }
-        actionsNote={isAuthed ? einreichCaptcha : anonHint}
+        actionsNote={actionsNote}
         header={header}
       />
     </div>

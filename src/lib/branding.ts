@@ -52,7 +52,7 @@ const eforms: BrandProfile = {
   home: {
     title: "Formulare online ausfüllen — auf jedem Gerät",
     subtitle:
-      "Füllen Sie das Formular bequem im Browser aus und laden Sie Ihr PDF herunter — ganz ohne Anmeldung. Ein Konto brauchen Sie nur, wenn Sie zwischenspeichern oder sich das PDF per E-Mail schicken lassen möchten.",
+      "Füllen Sie das Formular bequem im Browser aus und laden Sie Ihr PDF herunter — ganz ohne Anmeldung. Ein Konto brauchen Sie nur, wenn Sie eine verbindliche Einreichung mit Eingangsbestätigung und PDF-Zusendung per E-Mail benötigen. Außerdem können Sie mit einem Konto den Antrag zwischenspeichern und zu einem späteren Zeitpunkt fortsetzen.",
     primaryHref: "/antrag/musterantrag",
     primaryLabel: "Musterantrag starten",
     secondaryHref: "/registrieren",

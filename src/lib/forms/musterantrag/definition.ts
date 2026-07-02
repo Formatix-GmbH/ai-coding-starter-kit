@@ -139,31 +139,6 @@ export const musterantragDefinition: FormDefinition = {
         },
         { kind: "field", key: "eigenmittel", label: "Eingesetzte Eigenmittel", type: "currency" },
         {
-          kind: "field",
-          key: "international",
-          label: "Gibt es internationale Projektpartner?",
-          type: "yesno",
-        },
-        {
-          kind: "field",
-          key: "beschreibungInternational",
-          label: "Beschreibung der internationalen Zusammenarbeit",
-          type: "textarea",
-          required: true,
-          visibleWhen: { field: "vorhaben.international", op: "eq", value: "Ja" },
-        },
-        {
-          kind: "repeat",
-          key: "partner",
-          label: "Projektpartner",
-          itemLabel: "Partner",
-          visibleWhen: { field: "vorhaben.international", op: "eq", value: "Ja" },
-          children: [
-            { kind: "field", key: "partnername", label: "Name des Partners", type: "text", required: true },
-            { kind: "field", key: "land", label: "Land", type: "text" },
-          ],
-        },
-        {
           kind: "table",
           key: "meilensteine",
           label: "Meilensteine",
@@ -188,6 +163,34 @@ export const musterantragDefinition: FormDefinition = {
           rows: [
             { key: "personal", label: "Personal" },
             { key: "sachmittel", label: "Sachmittel" },
+          ],
+        },
+        // Bewusst als letzte Frage des Abschnitts (nach den Tabellen), damit die
+        // eingeblendeten Bereiche (Beschreibung + Partner) nicht mit den
+        // unabhängigen Tabellen optisch verschmelzen.
+        {
+          kind: "field",
+          key: "international",
+          label: "Gibt es internationale Projektpartner?",
+          type: "yesno",
+        },
+        {
+          kind: "field",
+          key: "beschreibungInternational",
+          label: "Beschreibung der internationalen Zusammenarbeit",
+          type: "textarea",
+          required: true,
+          visibleWhen: { field: "vorhaben.international", op: "eq", value: "Ja" },
+        },
+        {
+          kind: "repeat",
+          key: "partner",
+          label: "Projektpartner",
+          itemLabel: "Partner",
+          visibleWhen: { field: "vorhaben.international", op: "eq", value: "Ja" },
+          children: [
+            { kind: "field", key: "partnername", label: "Name des Partners", type: "text", required: true },
+            { kind: "field", key: "land", label: "Land", type: "text" },
           ],
         },
       ],
