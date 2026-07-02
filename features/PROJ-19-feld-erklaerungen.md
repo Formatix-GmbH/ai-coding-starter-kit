@@ -85,7 +85,7 @@ Bewusst **ohne** Erklärung (selbsterklärend): Titel des Vorhabens, geplanter B
 
 ## Open Questions
 - [ ] **Feldauswahl bestätigen:** Deckt die vorgeschlagene 10er-Liste den Bedarf, oder sollen Felder ergänzt/gestrichen werden? (Im Spec-Review zu bestätigen.)
-- [ ] **Disclaimer-Platzierung:** dezent im Fuß jedes Aufklappers vs. einmalig am Abschnittsanfang — Feinentscheidung in `/frontend`.
+- [x] **Disclaimer-Platzierung:** entschieden in `/architecture` — dezent im Fuß jedes Aufklapp-Panels („Unverbindliche Ausfüllhilfe").
 - [ ] **FlexCover-Nachzug (spätere Stufe):** Zeitpunkt und ob die Fachtexte vorab mit Euler Hermes abgestimmt werden.
 
 ## Decision Log
@@ -104,12 +104,60 @@ Bewusst **ohne** Erklärung (selbsterklärend): Titel des Vorhabens, geplanter B
 <!-- Added by /architecture -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
+| `explanation` als optionales Attribut an Feld + Tabelle im Definitions-Schema | gehört fachlich zum Feld; jedes Formular erbt die Funktion; Gruppen/Abschnitte erst bei Bedarf | 2026-07-02 |
+| shadcn/Radix **Collapsible** (bereits installiert) statt Popover/Eigenbau | A11y-Mechanik (auf/zu-Zustand) inklusive; Inhalt bleibt im Lesefluss statt Overlay; keine neue Abhängigkeit | 2026-07-02 |
+| Anzeige in der Feld-Hülle (unter Label) bzw. am Tabellen-Kopf, einmal je Tabelle | ein zentraler Einbaupunkt in der Engine; keine Wiederholung je Zelle/Eintrag | 2026-07-02 |
+| Kein Env-Flag/Schalter — „ohne Text erscheint nichts" ist das Gating | FlexCover bleibt ohne Zusatzmechanik pixelgleich (Regression als Nachweis) | 2026-07-02 |
+| Disclaimer „Unverbindliche Ausfüllhilfe" im Panel-Fuß | sichtbar genau beim Lesen; kein zusätzlicher Zustand | 2026-07-02 |
+| Kein Backend/keine Speicherung; Aufklapp-Zustand flüchtig | rein darstellendes Feature; 0 € laufend | 2026-07-02 |
 
 ---
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Grundsatz
+Reines **Frontend-Feature in der Engine** — kein Backend, keine Datenbank, keine neuen Pakete, keine neuen Env-Variablen, keine Laufzeit-KI. Die Erklärung wird ein **optionales Attribut in der Formulardefinition**; die Anzeige ein wiederverwendbarer Baustein der Feld-Hülle. Formulare ohne Erklärungstexte (FlexCover!) rendern exakt wie heute.
+
+### A) Was wird angefasst (Änderungs-Landkarte)
+```
+Definitions-Schema (Engine-Typen)
+└── neues optionales Attribut „explanation" (Langtext) an:
+    ├── Feldern            (z. B. Eigenmittel, Förderbereich)
+    └── Tabellen           (z. B. Meilensteine, Mittelverwendung)
+    → Gruppen/Abschnitte erst bei Bedarf in einer Folgestufe
+
+Engine-Anzeige (Feld-Hülle + Tabellen-Kopf)
+└── „Was ist hier gemeint?"-Auslöser (dezent, mit Info-Symbol)
+    ├── eingeklappt als Standard; öffnet einen Aufklapp-Bereich (Collapsible)
+    ├── Panel: Erklärtext + dezenter Fuß „Unverbindliche Ausfüllhilfe"
+    ├── barrierefrei: Zustand programmatisch erkennbar (auf/zu),
+    │   Name mit Feldbezug („Erklärung zu: Eingesetzte Eigenmittel")
+    └── bei Feldern: unter dem Label; bei Tabellen: an der Überschrift
+        (einmal je Tabelle, nicht je Zelle)
+
+Inhalte (nur Musterantrag, Abschnitt „Vorhaben")
+└── 10 bestätigte Erklärtexte direkt in der Musterantrag-Definition
+    (KI-generiert zur Entwicklungszeit → fachliches Review durch Betreiber)
+
+Tests
+└── E2E: Auslöser sichtbar/bedienbar, axe (auf- und zugeklappt) 0 krit./schwere,
+    FlexCover-Regression (kein Auslöser, Status quo)
+```
+
+### B) Datenmodell (unverändert)
+Keine neuen Daten, keine Speicherung: Die Erklärung ist **statischer Text in der Formulardefinition** — wie ein Label. Aufklapp-Zustand ist flüchtiger UI-Zustand (wird nicht gespeichert).
+
+### C) Tech-Entscheidungen (für PM begründet)
+- **Attribut in der Definition statt separater Inhalts-Datei:** Erklärung gehört fachlich zum Feld (wie Label/Hilfetext); jedes künftige Formular erbt die Funktion, Pflege an einem Ort.
+- **Vorhandener Aufklapp-Baustein (shadcn/Radix Collapsible):** bereits installiert, bringt die Barrierefreiheits-Mechanik (Zustand auf/zu) von Haus aus mit — kein Eigenbau, **keine neue Abhängigkeit**.
+- **Eingeklappt + „nichts ohne Text":** Felder ohne Erklärung sehen pixelgleich aus wie heute → FlexCover bleibt nachweislich unverändert (Regression), ganz ohne Schalter/Env-Flag.
+- **Disclaimer im Panel-Fuß:** immer genau dort sichtbar, wo der Text gelesen wird; kein zusätzlicher Zustand, keine Dopplung am Abschnittsanfang.
+- **Koexistenz mit `help`:** Kurzhinweis (help, eine Zeile) und Erklärung (Langtext, aufklappbar) bleiben getrennte Ebenen — Inhalte werden beim Texten entdoppelt.
+- **Mehrere Panels gleichzeitig offen erlaubt:** einfachster Zustand, keine Überraschungen (Spec-Edge-Case).
+
+### D) Abhängigkeiten (zu installieren)
+**Keine.** Collapsible-Baustein und Icon-Bibliothek sind vorhanden; Texte sind statischer Inhalt.
 
 ## QA Test Results
 _To be added by /qa_
