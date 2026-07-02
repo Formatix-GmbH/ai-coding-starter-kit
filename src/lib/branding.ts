@@ -63,6 +63,7 @@ const eforms: BrandProfile = {
 
 const PROFILES: Record<string, BrandProfile> = { flexcover, eforms };
 
-/** Aktives Marken-Profil (Default „flexcover", damit Prod unverändert bleibt). */
+/** Aktives Marken-Profil (Default „flexcover", damit Prod unverändert bleibt).
+ *  `||` statt `??`: Docker-Build-Args liefern bei „nicht gesetzt" einen Leerstring. */
 export const branding: BrandProfile =
-  PROFILES[process.env.NEXT_PUBLIC_BRAND ?? "flexcover"] ?? flexcover;
+  PROFILES[process.env.NEXT_PUBLIC_BRAND || "flexcover"] ?? flexcover;

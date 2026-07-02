@@ -6,7 +6,10 @@
 // ohne die Portal-/Registry-Schicht hereinzuziehen.
 
 export function getActiveFormIds(): string[] {
-  const raw = process.env.NEXT_PUBLIC_ACTIVE_FORMS ?? "flexcover";
+  // `||` statt `??`: Docker-Build-Args liefern bei „nicht gesetzt" einen
+  // LEERSTRING — der muss genauso wie undefined auf den Default fallen,
+  // sonst wäre in Prod plötzlich gar kein Formular aktiv (alles 404).
+  const raw = process.env.NEXT_PUBLIC_ACTIVE_FORMS || "flexcover";
   return raw
     .split(",")
     .map((s) => s.trim())

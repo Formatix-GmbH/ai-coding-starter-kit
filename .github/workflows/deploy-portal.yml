@@ -1,0 +1,33 @@
+# PROJ-18: Deploy des neutralen Formular-Portals (main → portal.eforms.de).
+# Bei Push auf main: auf dem Server `git pull` + Container neu bauen.
+# Gleiche Secrets wie Prod/Staging (DEPLOY_HOST/USER/SSH_KEY);
+# der Portal-Pfad ist fest /opt/flexcover-portal. Branding/aktive Formulare
+# kommen aus der dortigen .env (NEXT_PUBLIC_BRAND=eforms, ACTIVE_FORMS=musterantrag).
+
+name: Deploy Portal
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-portal
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/flexcover-portal
+            git pull --ff-only
+            docker compose up -d --build
+            docker image prune -f

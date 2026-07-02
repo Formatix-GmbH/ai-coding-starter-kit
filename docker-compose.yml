@@ -13,6 +13,9 @@ services:
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
         NEXT_PUBLIC_ENABLE_TESTDATA: ${NEXT_PUBLIC_ENABLE_TESTDATA:-}
+        # PROJ-18: Branding + aktive Formulare (leer = FlexCover-Default).
+        NEXT_PUBLIC_BRAND: ${NEXT_PUBLIC_BRAND:-}
+        NEXT_PUBLIC_ACTIVE_FORMS: ${NEXT_PUBLIC_ACTIVE_FORMS:-}
     restart: unless-stopped
     # Laufzeit-Env (inkl. Secrets: RESEND_API_KEY, SUBMISSION_EMAIL_FROM). Nur Server.
     env_file:
